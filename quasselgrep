@@ -2,6 +2,8 @@
 
 from db import Db
 from query import Query
+import config
+
 from optparse import OptionParser
 
 version = 'Quasselgrep 0.1\nCopyright (c) 2013 Chris Le Sueur\nThis program is licensed under the GNU General Public License'
@@ -10,10 +12,12 @@ usage = '%prog [options] <keywords>'
 def parse_args():
     parser = OptionParser(version=version, usage=usage)
     parser.add_option('-d', '--database',
-    		          dest='database',
+    		          dest='db_name',
     		          metavar='FILE',
 					  default='quassel-storage.sqlite',
 					  help='Specify the database file to be used. If no file is specified, "quassel-storage.sqlite" in the current directory will be used.')
+    parser.add_option('-c', '--configfile', dest='config', metavar='FILE',
+                  default='quasselgrep.conf', help='Location of config file')
     parser.add_option('-u', '--username', dest='username', metavar='USER',
                   default=None, help='Specify the quassel username.')
     parser.add_option('-N', '--network', dest='network', metavar='NETWORK',
@@ -26,15 +30,16 @@ def parse_args():
 
 def run():
 	(options, args) = parse_args()
+	config.update_options(options)
 	search = args[0]
 
 	db = Db()
-	cursor = db.connect(options.database)
+	cursor = db.connect(options)
 
 	query = Query(search, options.username, options.network, options.buffer, options.sender)
-	results = query.run(cursor)
+	results = query.run(cursor, options)
 	if results:
-		for res in results: print res
+		for res in results: print query.format(res)
 	else:
 		print "No results found."
 
