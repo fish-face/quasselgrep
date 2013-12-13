@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+
+from db import Db
+from query import Query
+from optparse import OptionParser
+
+version = 'Quasselgrep 0.1\nCopyright (c) 2013 Chris Le Sueur\nThis program is licensed under the GNU General Public License'
+usage = '%prog [options] <keywords>'
+
+def parse_args():
+    parser = OptionParser(version=version, usage=usage)
+    parser.add_option('-d', '--database',
+    		          dest='database',
+    		          metavar='FILE',
+					  default='quassel-storage.sqlite',
+					  help='Specify the database file to be used. If no file is specified, "quassel-storage.sqlite" in the current directory will be used.')
+    parser.add_option('-u', '--username', dest='username', metavar='USER',
+                  default=None, help='Specify the quassel username.')
+    parser.add_option('-N', '--network', dest='network', metavar='NETWORK',
+                  default=None, help='Specify the network to search.')
+    parser.add_option('-b', '--buffer', dest='buffer', metavar='BUFFER',
+                  default=None, help='Specify the Quassel buffer (query nick or #channel) to search')
+    parser.add_option('-n', '--nick', dest='sender', metavar='NICK',
+                  default=None, help='Specify the nickname to search for')
+    return parser.parse_args()
+
+def run():
+	(options, args) = parse_args()
+	search = args[0]
+
+	db = Db()
+	cursor = db.connect(options.database)
+
+	query = Query(search, options.username, options.network, options.buffer, options.sender)
+	results = query.run(cursor)
+	if results:
+		for res in results: print res
+	else:
+		print "No results found."
+
+if __name__ == '__main__':
+	run()
