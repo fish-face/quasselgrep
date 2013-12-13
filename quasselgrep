@@ -14,7 +14,7 @@ def parse_args():
     parser.add_option('-d', '--database',
     		          dest='db_name',
     		          metavar='FILE',
-					  default='quassel-storage.sqlite',
+					  default=None,
 					  help='Specify the database file to be used. If no file is specified, "quassel-storage.sqlite" in the current directory will be used.')
     parser.add_option('-c', '--configfile', dest='config', metavar='FILE',
                   default='quasselgrep.conf', help='Location of config file')
