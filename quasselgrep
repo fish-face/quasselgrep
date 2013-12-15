@@ -41,6 +41,7 @@ def parse_args():
                   help='Time range. See README for details.')
     return parser.parse_args()
 
+timeparts = ('year', 'month', 'day', 'hour', 'minute', 'second')
 def run():
 	(options, args) = parse_args()
 	config.update_options(options)
@@ -49,6 +50,46 @@ def run():
 	db = Db()
 	cursor = db.connect(options)
 
+	if options.timerange:
+		import parsedatetime.parsedatetime as pdt
+		cal = pdt.Calendar()
+		times = options.timerange.split(' to ')
+		if len(times) > 1:
+			fromtime = cal.parse(times[0])
+			totime = cal.parse(times[1])
+		else:
+			#fromtime = cal.parse(times[0], datetime(2,2,2,2,2,2))[0]
+			#fromtime2 = cal.parse(times[0], datetime(3,3,3,3,3,3))[0]
+			fromtime = dateparser.parse(times[0], datetime(2,2,2,2,2,2)).timetuple()
+			fromtime2 = dateparser.parse(times[0], datetime(3,3,3,3,3,3)).timetuple()
+			print fromtime
+			precision = None
+			for i in range(5,-1,-1):
+				if fromtime[i] != 2 or fromtime2[i] != 3:
+					print i, timeparts[i]
+					print fromtime[i], fromtime2[i]
+					precision = i
+					break
+
+			if precision:
+				now = datetime.now()
+				for i in range(5,precision-1,-1):
+					if timeparts[i] in ("year", "month", "day"):
+						now = now.replace(**{timeparts[i] : 1})
+					else:
+						now = now.replace(**{timeparts[i] : 0})
+
+				print timeparts[precision], now
+				print fromtime
+				print fromtime2
+				fromtime = cal.parse(times[0], now)[0]
+				totime = datetime(*fromtime[:6]) + relativedelta(**{timeparts[precision] + 's' : 1})
+			else:
+				fromtime = cal.parse(times[0])[0]
+				totime = datetime.now()
+		print fromtime
+		print totime
+		return
 	query = Query(search, options.username, options.network, options.buffer, options.sender)
 	results = query.run(cursor, options)
 	if results:
