@@ -2,8 +2,11 @@
 
 from db import Db
 from query import Query
+import dateparser
 import config
 
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from optparse import OptionParser
 
 version = 'Quasselgrep 0.1\nCopyright (c) 2013 Chris Le Sueur\nThis program is licensed under the GNU General Public License'
@@ -11,21 +14,31 @@ usage = '%prog [options] <keywords>'
 
 def parse_args():
     parser = OptionParser(version=version, usage=usage)
-    parser.add_option('-d', '--database',
-    		          dest='db_name',
-    		          metavar='FILE',
-					  default=None,
-					  help='Specify the database file to be used. If no file is specified, "quassel-storage.sqlite" in the current directory will be used.')
+    parser.add_option('--db', dest='db_type', metavar='[postgres|sqlite]',
+					  help='Type of database')
+    parser.add_option('--dbname', dest='db_name', metavar='NAME',
+					  help='Specify the database file or name.')
+    parser.add_option('--dbuser', dest='db_user', metavar='DATABASE',
+					  help='PostGres user')
+    parser.add_option('--dbpassword', dest='db_password', metavar='DATABASE',
+					  help='PostGres password')
+    parser.add_option('--dbhost', dest='db_host', metavar='HOST',
+					  help='Hostname of PostGres server')
+    parser.add_option('--dbport', dest='db_port', metavar='PORT',
+					  help='Port of PostGres server')
+
     parser.add_option('-c', '--configfile', dest='config', metavar='FILE',
                   default='quasselgrep.conf', help='Location of config file')
     parser.add_option('-u', '--username', dest='username', metavar='USER',
-                  default=None, help='Specify the quassel username.')
+                  help='Specify the quassel username.')
     parser.add_option('-N', '--network', dest='network', metavar='NETWORK',
-                  default=None, help='Specify the network to search.')
+                  help='Specify the network to search.')
     parser.add_option('-b', '--buffer', dest='buffer', metavar='BUFFER',
-                  default=None, help='Specify the Quassel buffer (query nick or #channel) to search')
+                  help='Specify the Quassel buffer (query nick or #channel) to search')
     parser.add_option('-n', '--nick', dest='sender', metavar='NICK',
-                  default=None, help='Specify the nickname to search for')
+                  help='Specify the nickname to search for')
+    parser.add_option('-t', '--time', dest='timerange', metavar='RANGE',
+                  help='Time range. See README for details.')
     return parser.parse_args()
 
 def run():
