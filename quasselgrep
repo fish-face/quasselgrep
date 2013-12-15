@@ -41,7 +41,6 @@ def parse_args():
                   help='Time range. See README for details.')
     return parser.parse_args()
 
-timeparts = ('year', 'month', 'day', 'hour', 'minute', 'second')
 def run():
 	(options, args) = parse_args()
 	config.update_options(options)
@@ -60,6 +59,7 @@ def run():
 		else:
 			start = result
 			end = base
+
 		if start:
 			timerange = [start, end]
 			print "Searching from %s to %s." % (start, end)
