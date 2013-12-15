@@ -6,8 +6,7 @@ import dateparse
 from times import timespan
 import config
 
-from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
+from datetime import datetime
 from optparse import OptionParser
 
 version = 'Quasselgrep 0.1\nCopyright (c) 2013 Chris Le Sueur\nThis program is licensed under the GNU General Public License'
