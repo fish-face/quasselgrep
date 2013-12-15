@@ -28,7 +28,7 @@ def parse_args():
 					  help='Port of PostGres server')
 
     parser.add_option('-c', '--configfile', dest='config', metavar='FILE',
-                  default='quasselgrep.conf', help='Location of config file')
+			help='Location of config file')
     parser.add_option('-u', '--username', dest='username', metavar='USER',
                   help='Specify the quassel username.')
     parser.add_option('-N', '--network', dest='network', metavar='NETWORK',

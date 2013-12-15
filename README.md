@@ -14,9 +14,7 @@ Usage
 ---
 
 The help message (`quasselgrep --help`) should explain most options.
-By default, quasselgrep will try to open an sqlite database named `quassel-storage.sqlite` in the current folder. You can specify an alternative database file on the commandline:
-
-    $ quasselgrep --dbname ~/.config/quassel-storage.sqlite [...]
+By default, quasselgrep will try to open an sqlite database at `~/.config/quassel-irc.org/quassel-storage.sqlite`. You can specify an alternative database file on the commandline.
 
 It is also possible to search in a postgres database:
 
