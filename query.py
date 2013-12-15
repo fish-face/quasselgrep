@@ -70,7 +70,7 @@ class Query:
 		except:
 			sender = result[2]
 
-		if '%' in self.buffer[0] and result[3]:
+		if self.buffer and result[3]:
 			return '[%s] <%s/%s> %s' % (result[0], result[3], sender, result[1])
 		else:
 			return '[%s] <%s> %s' % (result[0], sender, result[1])
