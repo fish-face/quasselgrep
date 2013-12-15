@@ -4,58 +4,74 @@ import re
 maskre = re.compile('(?P<nick>.*)!(.*)@(.*)')
 
 class Query:
-	def __init__(self, text, user, network='', buffer='', sender=''):
+	params = {
+		'text' : 'backlog.message',
+		'user' : 'quasseluser.username',
+		'network' : 'network.networkname',
+		'buffer' : 'buffer.buffername',
+		'sender' : 'sender.sender',
+	}
+	def __init__(self, text, user, network='', buffer='', sender='', timerange=None):
 		self.text = text
-		self.user = user if user else '%'
+		self.user = user
 
-		self.network = network if network else '%'
-		self.buffer = buffer if buffer else '%'
-		self.sender = sender if sender else '%'
+		self.network = network
+		self.buffer = buffer
+		self.sender = sender
 
-	def querystring(self):
-		#return """SELECT backlog.time, backlog.message,
-        #                 sender.sender, buffer.buffername, network.networkname
-        #          FROM backlog
-        #          JOIN sender ON sender.senderid = backlog.senderid
-        #          JOIN buffer ON buffer.bufferid = backlog.bufferid
-        #          JOIN network ON network.networkid = buffer.networkid
-        #          JOIN quasseluser ON network.userid = quasseluser.userid
-        #          WHERE backlog.message LIKE ? """, (self.text,)
-		return """SELECT backlog.time, backlog.message,
-                         sender.sender, buffer.buffername, network.networkname
-                  FROM backlog
-                  JOIN sender ON sender.senderid = backlog.senderid
-                  JOIN buffer ON buffer.bufferid = backlog.bufferid
-                  JOIN network ON network.networkid = buffer.networkid
-                  JOIN quasseluser ON network.userid = quasseluser.userid
-                  WHERE backlog.message LIKE %s AND
-                        sender.sender LIKE %s AND
-                        network.networkname LIKE %s AND
-                        buffer.buffername LIKE %s AND
-                        quasseluser.username LIKE %s
-                  ORDER BY backlog.time""", (self.text, self.sender, self.network, self.buffer, self.user)
+		self.timerange = timerange
+		if timerange:
+			self.fromtime = timerange[0]
+			self.totime = timerange[1]
+
+	def where_clause(self, params, param_string):
+		if not params:
+			return ''
+
+		clause = 'WHERE '
+		ands = ['%s LIKE %s' % (self.params[param], param_string) for param in params]
+		if self.timerange:
+			ands.append('backlog.time > %s' % param_string)
+			ands.append('backlog.time < %s' % param_string)
+			params.append('fromtime')
+			params.append('totime')
+		clause += ' AND '.join(ands)
+		return clause
+
+	def querystring(self, db_type):
+		params = [param for param in self.params.keys() if getattr(self,param)]
+		if db_type == 'postgres':
+			query =  ["SELECT backlog.time::timestamp(0), backlog.message,"]
+		elif db_type == 'sqlite':
+			query =  ["SELECT backlog.time, backlog.message,"]
+
+		query += ["       sender.sender, buffer.buffername, network.networkname",
+				  "FROM backlog",
+		          "JOIN sender ON sender.senderid = backlog.senderid",
+		          "JOIN buffer ON buffer.bufferid = backlog.bufferid",
+		          "JOIN network ON network.networkid = buffer.networkid",
+		          "JOIN quasseluser ON network.userid = quasseluser.userid"]
+		if db_type == 'postgres':
+			query.append(self.where_clause(params, '%s'))
+		elif db_type == 'sqlite':
+			query.append(self.where_clause(params, '?'))
+
+		query.append("ORDER BY backlog.time")
+		return ('\n'.join(query), [getattr(self,param) for param in params])
+
 
 	def run(self, cursor, options):
-		querystring, params = self.querystring()
-		if options.db_type == 'sqlite':
-			querystring = querystring.replace('%s', '?')
-
-		cursor.execute(querystring, params)
+		cursor.execute(*self.querystring(options.db_type))
 		return cursor.fetchall()
 
 	def format(self, result):
-		if isinstance(result[0], int):
-			timestamp = datetime.fromtimestamp(result[0]).strftime('%Y-%m-%d %H:%M:%S')
-		else:
-			timestamp = result[0]
-
 		try:
 			sender = maskre.match(result[2]).group('nick')
 		except:
 			sender = result[2]
 
 		if '%' in self.buffer[0] and result[3]:
-			return '[%s] <%s/%s> %s' % (timestamp, result[3], sender, result[1])
+			return '[%s] <%s/%s> %s' % (result[0], result[3], sender, result[1])
 		else:
-			return '[%s] <%s> %s' % (timestamp, sender, result[1])
+			return '[%s] <%s> %s' % (result[0], sender, result[1])
 
