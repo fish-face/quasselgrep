@@ -2,6 +2,8 @@ from datetime import datetime
 import re
 
 maskre = re.compile('(?P<nick>.*)!(.*)@(.*)')
+MSG_NORMAL = 1
+MSG_ACTION = 4
 
 class Query:
 	params = {
@@ -49,11 +51,12 @@ class Query:
 	def querystring(self, db_type):
 		params = [param for param in self.params.keys() if getattr(self,param)]
 		if db_type == 'postgres':
-			query =  ["SELECT backlog.time::timestamp(0), backlog.message,"]
+			query =  ["SELECT backlog.time::timestamp(0),"]
 		elif db_type == 'sqlite':
-			query =  ["SELECT datetime(backlog.time, 'unixepoch'), backlog.message,"]
+			query =  ["SELECT datetime(backlog.time, 'unixepoch'),"]
 
-		query += ["       sender.sender, buffer.buffername, network.networkname",
+		query += ["       backlog.type, backlog.message,",
+		          "       sender.sender, buffer.buffername, network.networkname",
 				  "FROM backlog",
 		          "JOIN sender ON sender.senderid = backlog.senderid",
 		          "JOIN buffer ON buffer.bufferid = backlog.bufferid",
@@ -70,13 +73,30 @@ class Query:
 		return cursor.fetchall()
 
 	def format(self, result):
+		time = result[0]
+		type = result[1]
+		message = result[2]
 		try:
-			sender = maskre.match(result[2]).group('nick')
+			sender = maskre.match(result[3]).group('nick')
 		except:
-			sender = result[2]
+			sender = result[3]
+		buffer = result[4]
 
-		if self.buffer and result[3]:
-			return '[%s] <%s/%s> %s' % (result[0], result[3], sender, result[1])
+		formatted = '[%s] ' % time
+
+		if type == MSG_NORMAL:
+			if not self.buffer and buffer:
+				formatted += '<%s/%s> ' % (sender, buffer)
+			else:
+				formatted += '<%s> ' % (sender)
 		else:
-			return '[%s] <%s> %s' % (result[0], sender, result[1])
+			if not self.buffer and buffer:
+				formatted += '%s: * %s ' % (buffer, sender)
+			else:
+				formatted += '* %s ' % (sender)
+
+
+		formatted += message
+
+		return formatted
 
