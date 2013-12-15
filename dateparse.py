@@ -718,7 +718,7 @@ class English(DateParser):
 						   ), name="date")
 
 		self.datetime = Bag((self.time, self.dmy), name="datetime")
-		self.bundle = Choice((self.plusdate, self.datetime, self.simple),
+		self.bundle = Choice((self.plusdate, self.simple, self.datetime),
 							 name="bundle")
 		self.torange = Combo((self.bundle, "to", self.bundle), name="torange")
 
