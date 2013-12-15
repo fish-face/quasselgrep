@@ -3,7 +3,8 @@ defaults = {
 	'db_name' : 'quassel-storage.sqlite',
 	'db_user' : None,
 	'db_password' : None,
-	'db_host' : None,
+	'db_host' : 'localhost',
+	'db_port' : 5432,
 	'db_password' : None
 }
 def update_options(options):
