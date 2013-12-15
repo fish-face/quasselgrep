@@ -1,5 +1,7 @@
+# Copyright 2013 Chris Le Sueur.
+# From dateparse.py, part of Whoosh, a python search library:
+
 # Copyright 2010 Matt Chaput. All rights reserved.
-# Modified 2013 by Chris Le Sueur.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
