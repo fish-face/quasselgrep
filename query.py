@@ -108,19 +108,31 @@ class Query:
 			cursor.execute(*self.search_query(options.db_type, only_ids=True))
 
 			context = int(options.context)
-			results = []
+			ids = []
+			gaps = []
 			for result in cursor:
 				idx = allids.index(result[0])
-				results += allids[idx-context:idx+context+1]
+				to_add = allids[idx-context:idx+context+1]
+				if to_add[0] not in ids and ids:
+					gaps.append(len(ids)+len(gaps))
+				ids += to_add
 
-			cursor.execute(*self.get_rows_with_ids(results, options.db_type))
+			cursor.execute(*self.get_rows_with_ids(ids, options.db_type))
+			results = cursor.fetchall()
+			for gap_index in gaps:
+				results.insert(gap_index, None)
 		else:
 			cursor.execute(*self.search_query(options.db_type))
+			results = cursor.fetchall()
 
 		print "Query completed in %.2f seconds" % (time() - start)
-		return cursor.fetchall()
+		return results
 
 	def format(self, result):
+		if result is None:
+			#Separator between contexts
+			return '---'
+
 		time = result[1]
 		type = result[2]
 		message = result[3]
