@@ -1,3 +1,5 @@
+import output
+
 from time import time
 from datetime import datetime
 import re
@@ -175,24 +177,7 @@ class Query:
 			sender = maskre.match(result[4]).group('nick')
 		except:
 			sender = result[4]
-		buffer = result[5]
+		buffer = result[5] if not self.buffer else None
 
-		#Build formatted string
-		formatted = '[%s] ' % time
-
-		if type == MSG_NORMAL:
-			if not self.buffer and buffer:
-				formatted += '<%s/%s> ' % (sender, buffer)
-			else:
-				formatted += '<%s> ' % (sender)
-		else:
-			if not self.buffer and buffer:
-				formatted += '%s: * %s ' % (buffer, sender)
-			else:
-				formatted += '* %s ' % (sender)
-
-
-		formatted += message
-
-		return formatted
+		return output.format(time, type, message, sender, buffer)
 
