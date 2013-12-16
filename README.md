@@ -26,6 +26,9 @@ To specify authentication details, use the `--dbuser` and `--dbpassword` options
 If quasselgrep can connect to a database then it can see all backlog, for any quassel user.
 Therefore it is not currently suitable for a multi-user quassel server, although it is possible to limit searches to a particular user with the -u switch.
 
+You can get context around search results with the -C option, making it easier to work out what was going on at the time someone said something.
+This is quite database-intensive, and is in any case best used for queries that will return few results (e.g. using a short time-period.)
+
 Examples
 ---
 
@@ -41,9 +44,9 @@ Search for messages for a particular quassel user, sent yesterday:
 
     $ quasselgrep -u 'MyUser' -t yesterday [...]
 
-Search for messages in a particular channel, sent at most four days ago:
+Search for messages in a particular channel, sent at most four days ago and give 3 lines of context either side of each result:
 
-    $ quasselgrep -b '#chat' -t -5d [...]
+    $ quasselgrep -b '#chat' -t -5d -C 3 [...]
 
 Searching by date/time
 ---
@@ -75,6 +78,17 @@ Relative searches are also possible:
 
 find messages from two months ago until now.
 You can also use "years", "days" and so on, as well as abbreviations "yr", "y", "hr", "h" etc.
+
+Performance
+---
+
+Quassel's backlog constitutes a rather large database table, so some queries are going to take a while to run.
+That said, Quasselgrep shouldn't be too slow with a reasonably-sized PostgreSQL database, for reasonable queries, so let me know if you're in this situation but are experiencing slowness.
+
+Of course if you're using SQLite, all bets are off!
+See the [migration page](http://bugs.quassel-irc.org/projects/1/wiki/PostgreSQL) on the Quassel site for instructions on how to migrate if this is causing issues.
+
+My own database is under 500M in size and so information on performance with larger databases is welcome.
 
 quasselgrep.conf
 ---
