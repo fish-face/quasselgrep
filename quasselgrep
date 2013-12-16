@@ -39,6 +39,10 @@ def parse_args():
                   help='Specify the nickname to search for')
     parser.add_option('-t', '--time', dest='timerange', metavar='RANGE',
                   help='Time range. See README for details.')
+
+    parser.add_option('-C', '--context', dest='context', metavar='LINES',
+                      help='Include this many lines of context with results.')
+
     return parser.parse_args()
 
 def run():
