@@ -60,9 +60,9 @@ Searching by date/time
 Quasselgrep uses code from the Whoosh project to provide a huge array of time filtering options.
 If Quasselgrep can't parse the date/time you provided, you can always fall back to ISO-formatted dates:
 
-    $ quasselgrep -t 2013-10-10 [...]
+    $ quasselgrep -t 2013-10-09 [...]
 
-will limit output to messages on the 10th of October, 2013.
+will limit output to messages on the 9th of October, 2013.
 A single date or time will specify a range, so that:
 
 	$ quasselgrep -t December [...]
