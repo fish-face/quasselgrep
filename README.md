@@ -13,6 +13,12 @@ The python dateutil library is a requirement, and can be installed with pip:
 Usage
 ---
 
+The basic usage is:
+
+```
+$ quasselgrep [OPTIONS] <search text>
+```
+
 The help message (`quasselgrep --help`) should explain most options.
 By default, quasselgrep will try to open an sqlite database at `~/.config/quassel-irc.org/quassel-storage.sqlite`. You can specify an alternative database file on the commandline.
 
