@@ -13,6 +13,7 @@ version = 'Quasselgrep 0.1\nCopyright (c) 2013 Chris Le Sueur\nThis program is l
 usage = '%prog [options] <keywords>'
 
 def parse_args():
+    """Parse command line arguments using optarg"""
     parser = OptionParser(version=version, usage=usage)
     parser.add_option('--db', dest='db_type', metavar='[postgres|sqlite]',
 					  help='Type of database')
@@ -46,6 +47,9 @@ def parse_args():
     return parser.parse_args()
 
 def run():
+	"""Main function called from the commandline"""
+
+	#Set up command-line and configfile options
 	(options, args) = parse_args()
 	config.update_options(options)
 	search = args[0]
@@ -53,6 +57,7 @@ def run():
 	db = Db()
 	cursor = db.connect(options)
 
+	#If user requested a timerange, handle that
 	if options.timerange:
 		parser = dateparse.English()
 		base = datetime.now()
@@ -73,6 +78,8 @@ def run():
 			return
 	else:
 		timerange = None
+
+	#Create and run query
 	query = Query(search, options.username, options.network, options.buffer, options.sender, timerange)
 	results = query.run(cursor, options)
 	if results:
