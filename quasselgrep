@@ -41,6 +41,8 @@ def parse_args():
     parser.add_option('-t', '--time', dest='timerange', metavar='RANGE',
                   help='Time range. See README for details.')
 
+    parser.add_option('-l', dest='whole_line', action='store_true',
+    		help='Return only results whose message matches the entire search string')
     parser.add_option('-C', '--context', dest='context', metavar='LINES',
                       help='Include this many lines of context with results.')
 
@@ -52,7 +54,7 @@ def run():
 	#Set up command-line and configfile options
 	(options, args) = parse_args()
 	config.update_options(options)
-	search = args[0]
+	search = ' '.join(args)
 
 	db = Db()
 	cursor = db.connect(options)
@@ -78,6 +80,9 @@ def run():
 			return
 	else:
 		timerange = None
+
+	if not options.whole_line:
+		search = '%%%s%%' % (search)
 
 	#Create and run query
 	query = Query(search, options.username, options.network, options.buffer, options.sender, timerange)

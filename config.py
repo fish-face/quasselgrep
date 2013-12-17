@@ -8,7 +8,9 @@ defaults = {
 	'db_password' : None,
 	'db_host' : 'localhost',
 	'db_port' : 5432,
-	'db_password' : None
+	'db_password' : None,
+
+	'whole_line' : False
 }
 
 def update_options(options):
