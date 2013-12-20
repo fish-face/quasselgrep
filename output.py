@@ -19,7 +19,10 @@ def format(time, msg_type, message, sender, buffer):
 		formatted += ' ' * max(0,(BUF_COL_WIDTH - len(formatted)))
 	formatted += '[%s] ' % time
 
-	return formatted + parser_for_msgtype[msg_type](message, sender)
+	try:
+		return formatted + parser_for_msgtype[msg_type](message, sender)
+	except KeyError:
+		return formatted + ' <Unknown event: %s, %s, %s>' % (msg_type, message, sender)
 
 def msg_parser(message, sender):
 	return '<%s> %s' % (sender, message)
