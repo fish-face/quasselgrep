@@ -5,6 +5,7 @@ class Db:
 
 	def connect(self, options):
 		if options.db_type == 'sqlite':
+			options.param_string = '?'
 			try:
 				import sqlite3 as dbmodule
 			except ImportError:
@@ -12,6 +13,7 @@ class Db:
 
 			self.connection = dbmodule.connect(options.db_name)
 		elif options.db_type == 'postgres':
+			options.param_string = '%s'
 			try:
 				import psycopg2 as dbmodule
 			except ImportError:

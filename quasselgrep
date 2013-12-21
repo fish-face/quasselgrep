@@ -5,92 +5,141 @@ from query import Query
 import dateparse
 from times import timespan
 import config
+import server
+import client
+from util import salt_hash
 
+import sys
 from datetime import datetime
 from optparse import OptionParser
 
 version = 'Quasselgrep 0.1\nCopyright (c) 2013 Chris Le Sueur\nThis program is licensed under the GNU General Public License'
 usage = '%prog [options] <keywords>'
 
-def parse_args():
-    """Parse command line arguments using optarg"""
-    parser = OptionParser(version=version, usage=usage)
-    parser.add_option('--db', dest='db_type', metavar='[postgres|sqlite]',
-					  help='Type of database')
-    parser.add_option('--dbname', dest='db_name', metavar='NAME',
-					  help='Specify the database file or name.')
-    parser.add_option('--dbuser', dest='db_user', metavar='DATABASE',
-					  help='PostGres user')
-    parser.add_option('--dbpassword', dest='db_password', metavar='DATABASE',
-					  help='PostGres password')
-    parser.add_option('--dbhost', dest='db_host', metavar='HOST',
-					  help='Hostname of PostGres server')
-    parser.add_option('--dbport', dest='db_port', metavar='PORT',
-					  help='Port of PostGres server')
+class QuasselGrep:
+	def __init__(self):
+		self.setup_optparser()
 
-    parser.add_option('-c', '--configfile', dest='config', metavar='FILE',
-			help='Location of config file')
-    parser.add_option('-u', '--username', dest='username', metavar='USER',
-                  help='Specify the quassel username.')
-    parser.add_option('-N', '--network', dest='network', metavar='NETWORK',
-                  help='Specify the network to search.')
-    parser.add_option('-b', '--buffer', dest='buffer', metavar='BUFFER',
-                  help='Specify the Quassel buffer (query nick or #channel) to search')
-    parser.add_option('-n', '--nick', dest='sender', metavar='NICK',
-                  help='Specify the nickname to search for')
-    parser.add_option('-t', '--time', dest='timerange', metavar='RANGE',
-                  help='Time range. See README for details.')
+		self.server = None
+		query = self.run()
+		if query is None:
+			return
 
-    parser.add_option('-l', dest='whole_line', action='store_true',
-    		help='Return only results whose message matches the entire search string')
-    parser.add_option('-C', '--context', dest='context', metavar='LINES',
-                      help='Include this many lines of context with results.')
-
-    return parser.parse_args()
-
-def run():
-	"""Main function called from the commandline"""
-
-	#Set up command-line and configfile options
-	(options, args) = parse_args()
-	config.update_options(options)
-	search = ' '.join(args)
-
-	db = Db()
-	cursor = db.connect(options)
-
-	#If user requested a timerange, handle that
-	if options.timerange:
-		parser = dateparse.English()
-		base = datetime.now()
-		result = parser.parse(options.timerange, base)[0]
-		if isinstance(result, timespan):
-			start = result.start
-			end = result.end
+		results = query.run()
+		if results:
+			for res in results: print query.format(res)
 		else:
-			start = result
-			end = base
+			print "No results found."
 
-		if start:
-			timerange = [start, end]
-			print "Searching from %s to %s." % (start, end)
+	def setup_optparser(self):
+		"""Parse command line arguments using optarg"""
+		parser = OptionParser(version=version, usage=usage)
+		parser.add_option('--db', dest='db_type', metavar='[postgres|sqlite]',
+						  help='Type of database')
+		parser.add_option('--dbname', dest='db_name', metavar='NAME',
+						  help='Specify the database file or name.')
+		parser.add_option('--dbuser', dest='db_user', metavar='DATABASE',
+						  help='PostGres user')
+		parser.add_option('--dbpassword', dest='db_password', metavar='DATABASE',
+						  help='PostGres password')
+		parser.add_option('--dbhost', dest='db_host', metavar='HOST',
+						  help='Hostname of PostGres server')
+		parser.add_option('--dbport', dest='db_port', metavar='PORT',
+						  help='Port of PostGres server')
+
+		parser.add_option('-c', '--configfile', dest='config', metavar='FILE',
+				help='Location of config file')
+		parser.add_option('-u', '--username', dest='username', metavar='USER',
+					  help='Specify the quassel username.')
+		parser.add_option('-N', '--network', dest='network', metavar='NETWORK',
+					  help='Specify the network to search.')
+		parser.add_option('-b', '--buffer', dest='buffer', metavar='BUFFER',
+					  help='Specify the Quassel buffer (query nick or #channel) to search')
+		parser.add_option('-n', '--nick', dest='sender', metavar='NICK',
+					  help='Specify the nickname to search for')
+		parser.add_option('-t', '--time', dest='timerange', metavar='RANGE',
+					  help='Time range. See README for details.')
+
+		parser.add_option('--server', dest='server', action='store_true')
+		parser.add_option('-H', '--host', dest='hostname', help='Connect to quasselgrep server at HOSTNAME')
+		parser.add_option('-p', '--password', dest='password', help='Password your quassel username')
+
+		parser.add_option('-l', dest='whole_line', action='store_true',
+				help='Return only results whose message matches the entire search string')
+		parser.add_option('-C', '--context', dest='context', metavar='LINES',
+						  help='Include this many lines of context with results.')
+
+		self.parser = parser
+
+	def parse_args(self, options=None):
+		return self.parser.parse_args(values=options)
+
+	def run(self, options=None, salt=''):
+		"""Main function called from the commandline"""
+
+		#Set up command-line and configfile options
+		if options:
+			(options, args) = self.parse_args(options)
+		else:
+			(options, args) = self.parse_args()
+		config.update_options(options)
+		search = ' '.join(args)
+
+		#Be a client, or a server.
+		if options.hostname and not self.server:
+			client.start(options, self)
+			return
+		if options.server and not self.server:
+			self.server = True
+			server.start(self, options)
+			return
+
+		db = Db()
+		cursor = db.connect(options)
+
+		#Users connecting to a server need to authenticate
+		if self.server:
+			if not options.username or not options.password:
+				raise server.AuthException('You must specify a quassel username and password.')
+
+			cursor.execute('SELECT password FROM quasseluser WHERE username=%s' % (options.param_string), (options.username,))
+			results = cursor.fetchall()
+			if len(results) != 1:
+				raise server.AuthException('Incorrect username or password.')
+			if salt_hash(salt, results[0][0]) != options.password:
+				raise server.AuthException('Incorrect username or password.')
+
+		#If user requested a timerange, handle that
+		if options.timerange:
+			parser = dateparse.English()
+			base = datetime.now()
+			result = parser.parse(options.timerange, base)[0]
+			if isinstance(result, timespan):
+				start = result.start
+				end = result.end
+			else:
+				start = result
+				end = base
+
+			if start:
+				timerange = [start, end]
+				print "Searching from %s to %s." % (start, end)
+			else:
+				timerange = None
+				print "Error: Couldn't parse %s as a date/time." % (options.timerange)
+				return
 		else:
 			timerange = None
-			print "Error: Couldn't parse %s as a date/time." % (options.timerange)
-			return
-	else:
-		timerange = None
 
-	if not options.whole_line:
-		search = '%%%s%%' % (search)
+		if not options.whole_line:
+			search = '%%%s%%' % (search)
 
-	#Create and run query
-	query = Query(search, options.username, options.network, options.buffer, options.sender, timerange)
-	results = query.run(cursor, options)
-	if results:
-		for res in results: print query.format(res)
-	else:
-		print "No results found."
+		#Create and run query
+		query = Query(cursor, options, search, options.username, options.network, options.buffer, options.sender, timerange)
+		return query
+
+	def server_request(self, command, socket):
+		pass
 
 if __name__ == '__main__':
-	run()
+	program = QuasselGrep()

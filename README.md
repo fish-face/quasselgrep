@@ -30,7 +30,8 @@ This will attempt to connect to a database named "quassel" on localhost with por
 To specify authentication details, use the `--dbuser` and `--dbpassword` options or use a config file.
 
 If quasselgrep can connect to a database then it can see all backlog, for any quassel user.
-Therefore it is not currently suitable for a multi-user quassel server, although it is possible to limit searches to a particular user with the -u switch.
+Quasselgrep can be run as a server on a quassel host, and quasselgrep clients can connect.
+See the relevant sections for how to run quasselgrep as a server, or use it to connect to one.
 
 You can get context around search results with the -C option, making it easier to work out what was going on at the time someone said something.
 This is quite database-intensive, and is in any case best used for queries that will return few results (e.g. using a short time-period.)
@@ -84,6 +85,28 @@ Relative searches are also possible:
 
 find messages from two months ago until now.
 You can also use "years", "days" and so on, as well as abbreviations "yr", "y", "hr", "h" etc.
+
+Running/Connecting to a Quasselgrep Server
+---
+
+If you host a Quassel server, you can run quasselgrep on it so that your users can search their logs easily.
+Just run quasselgrep as follows:
+
+	$ quasselgrep [db-options] --server
+
+You can specify other options on the commandline; these will restrict users to using only those parameters and is probably not useful in the slightest.
+On the other hand, any options you specify in the config file are taken as defaults and can be overridden.
+Quasselgrep listens on port 9001 by default, and you can specify an alternative with `--port`.
+
+Running a quasselgrep server means allowing all your quassel users to run potentially expensive queries against the database, which could impact performance of the server for other users.
+Options for limiting queries to guard against accidental DoS attacks should be coming soon.
+
+To connect to a quasselgrep server, supply the `-H/--hostname` option, specifying the server to connect to.
+You will also need to supply your quassel username and password:
+
+    $ quasselgrep -H <hostname> [--port <port>] -u <user> --password <password> [...]
+
+Your password is not transmitted in the clear, but all other communication is.
 
 Performance
 ---
