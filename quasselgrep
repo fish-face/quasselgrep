@@ -74,7 +74,7 @@ class QuasselGrep:
 	def parse_args(self, options=None):
 		return self.parser.parse_args(values=options)
 
-	def run(self, options=None, salt=''):
+	def run(self, options=None, search='', salt=''):
 		"""Main function called from the commandline"""
 
 		#Set up command-line and configfile options
@@ -83,11 +83,12 @@ class QuasselGrep:
 		else:
 			(options, args) = self.parse_args()
 		config.update_options(options)
-		search = ' '.join(args)
+		if args:
+			search = ' '.join(args)
 
 		#Be a client, or a server.
 		if options.hostname and not self.server:
-			client.start(options, self)
+			client.start(options, search, self)
 			return
 		if options.server and not self.server:
 			self.server = True

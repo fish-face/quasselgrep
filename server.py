@@ -33,12 +33,16 @@ class QuasselGrepHandler(BaseRequestHandler):
 
 		valid_options = [opt.dest for opt in self.server.program.parser.option_list if opt.dest]
 		options = Object()
+		search = ''
 		for opt in valid_options:
 			setattr(options, opt, None)
 
 		for option in option_list:
 			option = option.split('=')
 			if len(option) != 2:
+				continue
+			if option[0] == 'SEARCH':
+				search = option[1]
 				continue
 			#Sanity/safety check
 			if option[0] not in valid_options or option[0][:2] == 'db' or option[0] == 'config':
@@ -54,7 +58,7 @@ class QuasselGrepHandler(BaseRequestHandler):
 
 		print "Running:", options
 		try:
-			query = self.server.program.run(options, salt)
+			query = self.server.program.run(options, search, salt)
 		except AuthException, e:
 			socket.sendall('Error: %s' % (e))
 			socket.close()

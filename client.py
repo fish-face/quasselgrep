@@ -3,7 +3,7 @@ import socket
 
 from util import salt_and_hash, getdata, escape
 
-def start(options, program):
+def start(options, search, program):
 	if not hasattr(options, 'hostname'):
 		print "Error: You must supply a hostname."
 		return
@@ -37,7 +37,8 @@ def start(options, program):
 			continue
 
 		command += '%s=%s\n' % (opt_name, escape(str(getattr(options, opt_name))))
-	
+
+	command += 'SEARCH=%s\n' % (search)
 	print command
 	sock.sendall(command)
 
