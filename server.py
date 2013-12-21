@@ -59,7 +59,7 @@ class QuasselGrepHandler(BaseRequestHandler):
 		try:
 			query = self.server.program.run(options, search, salt)
 		except AuthException, e:
-			socket.sendall('Error: %s' % (e))
+			socket.sendall('Error: %s\n' % (e))
 			socket.close()
 			return
 
@@ -70,7 +70,7 @@ class QuasselGrepHandler(BaseRequestHandler):
 				socket.sendall(query.format(res) + '\n')
 			socket.close()
 		else:
-			socket.sendall('No results.')
+			socket.sendall('No results.\n')
 
 host = 'localhost'
 port = 9001
