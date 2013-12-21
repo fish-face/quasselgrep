@@ -70,6 +70,18 @@ class QuasselGrep:
 						  help='Include this many lines of context with results.')
 
 		self.parser = parser
+		self.all_options = []
+		self.valid_options = []
+		for option in parser.option_list:
+			if not option.dest:
+				continue
+			self.all_options.append(option.dest)
+
+			if option.dest[:2] == 'db':
+				continue
+			if option.dest in ['hostname', 'config', 'server']:
+				continue
+			self.valid_options.append(option.dest)
 
 	def parse_args(self, options=None):
 		return self.parser.parse_args(values=options)

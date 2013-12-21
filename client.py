@@ -31,7 +31,7 @@ def start(options, search, program):
 		opt_name = option.dest
 		if not opt_name or not hasattr(options, opt_name):
 			continue
-		if opt_name[:2] == 'db':
+		if not opt_name in program.valid_options:
 			continue
 		if getattr(options, opt_name) is None:
 			continue

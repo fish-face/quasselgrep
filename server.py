@@ -13,6 +13,7 @@ class Object:
 class QuasselGrepHandler(BaseRequestHandler):
 	def handle(self):
 		socket = self.request
+		program = self.server.program
 		request = getdata(socket)[0]
 
 		if request != 'HI':
@@ -31,10 +32,10 @@ class QuasselGrepHandler(BaseRequestHandler):
 				break
 			option_list += new
 
-		valid_options = [opt.dest for opt in self.server.program.parser.option_list if opt.dest]
+		#valid_options = [opt.dest for opt in self.server.program.parser.option_list if opt.dest]
 		options = Object()
 		search = ''
-		for opt in valid_options:
+		for opt in program.all_options:
 			setattr(options, opt, None)
 
 		for option in option_list:
@@ -45,7 +46,7 @@ class QuasselGrepHandler(BaseRequestHandler):
 				search = option[1]
 				continue
 			#Sanity/safety check
-			if option[0] not in valid_options or option[0][:2] == 'db' or option[0] == 'config':
+			if option[0] not in program.valid_options:
 				continue
 			setattr(options, option[0], option[1])
 
@@ -57,7 +58,7 @@ class QuasselGrepHandler(BaseRequestHandler):
 		#password = response[5:]
 
 		try:
-			query = self.server.program.run(options, search, salt)
+			query = program.run(options, search, salt)
 		except AuthException, e:
 			socket.sendall('Error: %s\n' % (e))
 			socket.close()
