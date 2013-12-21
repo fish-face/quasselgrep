@@ -10,7 +10,6 @@ def getdata(socket):
 		if data[-1] == '\n':
 			break
 
-	print command
 	return command.split('\n')
 
 def salt_and_hash(salt, password):

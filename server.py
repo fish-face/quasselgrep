@@ -26,7 +26,7 @@ class QuasselGrepHandler(BaseRequestHandler):
 		option_list = []
 		while True:
 			new = getdata(socket)
-			if new[-1] == 'GO' or new[-1] == '':
+			if new[-1] == '':
 				option_list += new[:-1]
 				break
 			option_list += new
@@ -56,7 +56,6 @@ class QuasselGrepHandler(BaseRequestHandler):
 
 		#password = response[5:]
 
-		print "Running:", options
 		try:
 			query = self.server.program.run(options, search, salt)
 		except AuthException, e:
@@ -65,11 +64,8 @@ class QuasselGrepHandler(BaseRequestHandler):
 			return
 
 		socket.sendall('Please wait for results...\n')
-		print "running query"
 		results = query.run()
-		print "run:", len(results)
 		if results:
-			print 'Query finished'
 			for res in results:
 				socket.sendall(query.format(res) + '\n')
 			socket.close()

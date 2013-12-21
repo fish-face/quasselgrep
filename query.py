@@ -156,11 +156,8 @@ class Query:
 				results.insert(gap_index, None)
 		else:
 			#Simple case
-			print "Executing"
 			self.cursor.execute(*self.search_query())
-			print "Executed"
 			results = self.cursor.fetchall()
-			#results = [['wat','wat',1,'wat','wat','wat','wat','wat']]
 
 		print "Query completed in %.2f seconds" % (time() - start)
 		return results

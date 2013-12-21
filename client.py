@@ -39,10 +39,7 @@ def start(options, search, program):
 		command += '%s=%s\n' % (opt_name, escape(str(getattr(options, opt_name))))
 
 	command += 'SEARCH=%s\n' % (search)
-	print command
 	sock.sendall(command)
-
-	print getdata(sock)
 
 	while True:
 		data = sock.recv(1024)
