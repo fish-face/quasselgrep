@@ -94,7 +94,13 @@ class QuasselGrep:
 			(options, args) = self.parse_args(options)
 		else:
 			(options, args) = self.parse_args()
-		config.update_options(options)
+
+		try:
+			config.update_options(options)
+		except ValueError, e:
+			print "Error: Invalid option: %s" % (e)
+			return
+
 		if args:
 			search = ' '.join(args)
 
@@ -108,7 +114,11 @@ class QuasselGrep:
 			return
 
 		db = Db()
-		cursor = db.connect(options)
+		try:
+			cursor = db.connect(options)
+		except Exception, e:
+			print "Error connecting to database: %s" % (e)
+			return
 
 		#Users connecting to a server need to authenticate
 		if self.server:
