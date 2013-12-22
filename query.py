@@ -43,24 +43,19 @@ class Query:
 
 	def where_clause(self, params):
 		"""Build a where clause based on specified params"""
-		if self.options.db_type == 'postgres':
-			param_string = '%s'
-		elif self.options.db_type == 'sqlite':
-			param_string = '?'
-
 		if not params:
 			return ''
 
 		clause = 'WHERE '
 		#Conjunction of LIKEs.
 		#TODO Consider changing this to equality for buffer, sender.
-		ands = ['%s LIKE %s' % (self.params[param], param_string) for param in params]
+		ands = ['%s LIKE %s' % (self.params[param], self.options.param_string) for param in params]
 		if self.timerange:
 			if self.options.db_type == 'sqlite':
 				self.fromtime = self.fromtime.strftime('%s')
 				self.totime = self.totime.strftime('%s')
-			ands.append('backlog.time > %s' % param_string)
-			ands.append('backlog.time < %s' % param_string)
+			ands.append('backlog.time > %s' % self.options.param_string)
+			ands.append('backlog.time < %s' % self.options.param_string)
 			params.append('fromtime')
 			params.append('totime')
 		clause += ' AND '.join(ands)
