@@ -11,11 +11,13 @@ MSG_ACTION = 4
 class Query:
 	"""Represents a single query to the database"""
 	params = {
-		'text' : 'backlog.message',
-		'user' : 'quasseluser.username',
-		'network' : 'network.networkname',
-		'buffer' : 'buffer.buffername',
-		'sender' : 'sender.sender',
+		'text' : 'backlog.message LIKE %s',
+		'user' : 'quasseluser.username = %s',
+		'network' : 'network.networkname LIKE %s',
+		'buffer' : 'buffer.buffername LIKE %s',
+		'sender' : 'backlog.senderid LIKE %s',
+		'fromtime' : 'backlog.time > %s',
+		'totime' : 'backlog.time < %s',
 	}
 	def __init__(self, cursor, options, text, user, network='', buffer='', sender='', timerange=None):
 		self.cursor = cursor
@@ -30,16 +32,30 @@ class Query:
 
 		self.timerange = timerange
 		if timerange:
-			self.fromtime = timerange[0]
-			self.totime = timerange[1]
+			if options.db_type == 'postgres':
+				self.fromtime = timerange[0]
+				self.totime = timerange[1]
+			elif options.db_type == 'sqlite':
+				self.fromtime = self.fromtime.strftime('%s')
+				self.totime = self.totime.strftime('%s')
 
-	#def match_expression(self, param, param_string):
-	#	if param == 'text':
-	#		return "%s LIKE %s" % (self.params[param], param_string), self.text
-	#	elif param == 'user':
-	#		return "%s in(%s)" % (self.params[param], param_string), self.user_list
-	#	elif param == 'network':
-	#		return " in(%s)" % (2)
+	#def get_senders(self, sender):
+	#	"""Find matching user ids"""
+
+	#	if not sender:
+	#		return None
+
+	#	sender_pattern = '%s!%%' % (sender)
+	#	self.cursor.execute('SELECT senderid FROM sender WHERE sender LIKE %s OR sender=%s'.replace('%s',self.options.param_string), (sender_pattern, sender))
+	#	results = self.cursor.fetchall()
+	#	if not results:
+	#		raise ValueError('No nicks matched %s' % sender)
+	#	return tuple([result[0] for result in results])
+
+	def filter_params(self, params):
+		"""return only those params which have been set"""
+
+		return [param for param in params if getattr(self,param,None)]
 
 	def where_clause(self, params):
 		"""Build a where clause based on specified params"""
@@ -47,17 +63,8 @@ class Query:
 			return ''
 
 		clause = 'WHERE '
-		#Conjunction of LIKEs.
-		#TODO Consider changing this to equality for buffer, sender.
-		ands = ['%s LIKE %s' % (self.params[param], self.options.param_string) for param in params]
-		if self.timerange:
-			if self.options.db_type == 'sqlite':
-				self.fromtime = self.fromtime.strftime('%s')
-				self.totime = self.totime.strftime('%s')
-			ands.append('backlog.time > %s' % self.options.param_string)
-			ands.append('backlog.time < %s' % self.options.param_string)
-			params.append('fromtime')
-			params.append('totime')
+		#TODO Consider changing this to equality for buffer
+		ands = [self.params[param] % (self.options.param_string) for param in params]
 		clause += ' AND '.join(ands)
 		return clause
 
@@ -85,16 +92,17 @@ class Query:
 
 	def search_query(self, only_ids=False):
 		"""Normal query"""
-		params = [param for param in self.params.keys() if getattr(self,param)]
+		params = self.filter_params(self.params.keys())
 		query = self.basequery(only_ids)
 		query.append(self.where_clause(params))
 
 		query.append("ORDER BY backlog.time")
+		#print '\n'.join(query)
 		return ('\n'.join(query), [getattr(self,param) for param in params])
 
 	def allpossible_query(self):
 		"""Get all possible IDs - ignore text and sender"""
-		params = filter(lambda x: getattr(self,x), ["user", "network", "buffer"])
+		params = self.filter_params(["user", "network", "buffer", "fromtime", "totime"])
 		query = self.basequery(only_ids=True)
 		query.append(self.where_clause(params))
 
