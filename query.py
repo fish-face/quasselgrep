@@ -15,7 +15,7 @@ class Query:
 		'user' : 'quasseluser.username = %s',
 		'network' : 'network.networkname LIKE %s',
 		'buffer' : 'buffer.buffername LIKE %s',
-		'sender' : 'backlog.senderid LIKE %s',
+		'sender' : 'sender.sender LIKE %s',
 		'fromtime' : 'backlog.time > %s',
 		'totime' : 'backlog.time < %s',
 	}
