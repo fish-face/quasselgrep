@@ -26,7 +26,9 @@ class QuasselGrep:
 			return
 
 		results = query.run()
-		if results:
+		if query.options.debug:
+			for res in results: print res[0]
+		elif results:
 			for res in results: print query.format(res)
 		else:
 			print "No results found."
@@ -68,6 +70,9 @@ class QuasselGrep:
 				help='Return only results whose message matches the entire search string')
 		parser.add_option('-C', '--context', dest='context', metavar='LINES',
 						  help='Include this many lines of context with results.')
+
+		parser.add_option('--debug', dest='debug', action='store_true',
+				help='Display information about the query instead of running it')
 
 		self.parser = parser
 		self.all_options = []

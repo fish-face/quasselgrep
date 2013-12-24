@@ -159,7 +159,13 @@ class Query:
 				results.insert(gap_index, None)
 		else:
 			#Simple case
-			self.cursor.execute(*self.search_query())
+			if not self.options.debug:
+				self.cursor.execute(*self.search_query())
+			else:
+				query, params = self.search_query()
+				print query
+				print params
+				self.cursor.execute("EXPLAIN " + query, params)
 			results = self.cursor.fetchall()
 
 		print "Query completed in %.2f seconds" % (time() - start)
