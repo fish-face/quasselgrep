@@ -8,17 +8,15 @@ maskre = re.compile('(?P<nick>.*)!(.*)@(.*)')
 MSG_NORMAL = 1
 MSG_ACTION = 4
 
+class Param:
+	"""Holds information about a parameter that can be searched on"""
+	def __init__(self, name, clause, morenames=[]):
+		self.names = [name] + morenames
+		self.clause = clause
+	
 class Query:
 	"""Represents a single query to the database"""
-	params = {
-		'text' : 'backlog.message LIKE %s',
-		'user' : 'quasseluser.username = %s',
-		'network' : 'network.networkname LIKE %s',
-		'buffer' : 'buffer.buffername LIKE %s',
-		'sender' : 'sender.sender LIKE %s',
-		'fromtime' : 'backlog.time > %s',
-		'totime' : 'backlog.time < %s',
-	}
+
 	def __init__(self, cursor, options, text, user, network='', buffer='', sender='', timerange=None):
 		self.cursor = cursor
 		self.options = options
@@ -29,6 +27,8 @@ class Query:
 		self.network = network
 		self.buffer = buffer
 		self.sender = sender
+		if sender:
+			self.sender_pattern = sender + '!%'
 
 		self.timerange = timerange
 		if timerange:
@@ -38,6 +38,17 @@ class Query:
 			elif options.db_type == 'sqlite':
 				self.fromtime = self.fromtime.strftime('%s')
 				self.totime = self.totime.strftime('%s')
+
+		#TODO Consider changing this to equality for buffer
+		self.params = {
+			'text' : Param('text', 'backlog.message LIKE %(param)s'),
+			'user' : Param('user', 'quasseluser.username = %(param)s'),
+			'network' : Param('network', 'network.networkname LIKE %(param)s'),
+			'buffer' : Param('buffer', 'buffer.buffername LIKE %(param)s'),
+			'sender' : Param('sender', 'sender.sender = %(param)s OR sender.sender LIKE %(param)s', ['sender_pattern']),
+			'fromtime' : Param('fromtime', 'backlog.time > %(param)s'),
+			'totime' : Param('totime', 'backlog.time < %(param)s'),
+		}
 
 	#def get_senders(self, sender):
 	#	"""Find matching user ids"""
@@ -62,11 +73,16 @@ class Query:
 		if not params:
 			return ''
 
-		clause = 'WHERE '
-		#TODO Consider changing this to equality for buffer
-		ands = [self.params[param] % (self.options.param_string) for param in params]
-		clause += ' AND '.join(ands)
-		return clause
+		ands = []
+		modified_params = []
+		for param in params:
+			ands.append(self.params[param].clause % {'param' : self.options.param_string})
+			modified_params += self.params[param].names
+
+		#May need to add more parameters (sender_pattern)
+		params[:] = modified_params
+
+		return 'WHERE ' + ' AND '.join(ands)
 
 	def basequery(self, only_ids=False):
 		"""Common start to queries
