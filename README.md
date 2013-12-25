@@ -20,6 +20,8 @@ $ quasselgrep [OPTIONS] <search text>
 ```
 
 The help message (`quasselgrep --help`) should explain most options.
+Text fields are searched using SQL LIKE statements, so you can use '%' as a wildcard.
+
 By default, quasselgrep will try to open an sqlite database at `~/.config/quassel-irc.org/quassel-storage.sqlite`. You can specify an alternative database file on the commandline.
 
 It is also possible to search in a postgres database:
@@ -41,19 +43,19 @@ Examples
 
 Search for any messages for any user saying 'Hello!':
 
-    $ quasselgrep 'Hello!'
+    $ quasselgrep Hello!
 
 Search for any messages on #quassel from Sput:
 
-    $ quasselgrep -b '#quassel' -n Sput% %
+    $ quasselgrep -b #quassel -n Sput
 
 Search for messages for a particular quassel user, sent yesterday:
 
-    $ quasselgrep -u 'MyUser' -t yesterday [...]
+    $ quasselgrep -u MyUser -t yesterday [...]
 
 Search for messages in a particular channel, sent at most four days ago and give 3 lines of context either side of each result:
 
-    $ quasselgrep -b '#chat' -t -5d -C 3 [...]
+    $ quasselgrep -b #chat -t -5d -C 3 [...]
 
 Searching by date/time
 ---
