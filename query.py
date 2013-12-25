@@ -3,6 +3,7 @@ import output
 from time import time
 from datetime import datetime
 import re
+from threading import Thread
 
 maskre = re.compile('(?P<nick>.*)!(.*)@(.*)')
 MSG_NORMAL = 1
@@ -146,11 +147,11 @@ class Query:
 		if self.options.context:
 			#First find all "possible" ids of matching rows - so ignoring
 			#the search parameters apart from user, network, buffer and time.
-			self.cursor.execute(*self.allpossible_query())
+			self.execute_query(*self.allpossible_query())
 			allids = [res[0] for res in self.cursor.fetchall()]
 
 			#Then run the actual search, retrieving only the IDs
-			self.cursor.execute(*self.search_query(only_ids=True))
+			self.execute_query(*self.search_query(only_ids=True))
 
 			#Now work out the IDs of ALL records to output, including
 			#the context lines
@@ -167,7 +168,7 @@ class Query:
 				ids += to_add
 
 			#Now get full records of the computed IDs
-			self.cursor.execute(*self.get_rows_with_ids(ids))
+			self.execute_query(*self.get_rows_with_ids(ids))
 
 			#Finally insert the separators
 			results = self.cursor.fetchall()
@@ -176,7 +177,7 @@ class Query:
 		else:
 			#Simple case
 			if not self.options.debug:
-				self.cursor.execute(*self.search_query())
+				self.execute_query(*self.search_query())
 			else:
 				query, params = self.search_query()
 				print query
@@ -186,6 +187,18 @@ class Query:
 
 		print "Query completed in %.2f seconds" % (time() - start)
 		return results
+
+	def execute_query(self, query, params=[]):
+		thread = Thread(target=self.cursor.execute, args=(query,params))
+		thread.daemon = True
+		thread.start()
+		try:
+			while True:
+				thread.join(1)
+				if not thread.is_alive(): break
+		except KeyboardInterrupt:
+			print "Stopping."
+			raise
 
 	def format(self, result):
 		"""Format a database row
