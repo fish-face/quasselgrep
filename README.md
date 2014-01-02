@@ -124,7 +124,7 @@ My own database is under 500M in size and so information on performance with lar
 quasselgrep.conf
 ---
 
-Principally for storing database connection information, a configfile can be created and specified with the -c option (Default: `quasselgrep.conf` in the current directory)
+Principally for storing database connection information, a configfile can be created and specified with the -c option (Default: `~/.quasselgrep.conf`)
 The file should look something like:
 
 ```python
