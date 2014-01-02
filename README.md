@@ -134,7 +134,7 @@ config = {
 	'db_user' : 'quassel',
 	'db_password' : '<DatabasePassword>',
 	'db_host' : 'localhost',
-	'user' : '<MyQuasselUser>'
+	'username' : '<MyQuasselUser>'
 }
 ```
 
