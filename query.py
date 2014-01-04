@@ -173,12 +173,15 @@ class Query:
 				ids += to_add
 
 			#Now get full records of the computed IDs
-			self.execute_query(*self.get_rows_with_ids(ids))
+			if ids:
+				self.execute_query(*self.get_rows_with_ids(ids))
 
-			#Finally insert the separators
-			results = self.cursor.fetchall()
-			for gap_index in gaps:
-				results.insert(gap_index, None)
+				#Finally insert the separators
+				results = self.cursor.fetchall()
+				for gap_index in gaps:
+					results.insert(gap_index, None)
+			else:
+				results = []
 		else:
 			#Simple case
 			if not self.options.debug:
