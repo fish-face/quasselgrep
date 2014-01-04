@@ -9,6 +9,8 @@ QUIT = 0x80
 KICK = 0x100
 TOPIC = 0x4000
 INVITE = 0x20000
+SPLITJOIN = 0x08000
+SPLITQUIT = 0x10000
 
 BUF_COL_WIDTH = 16
 
@@ -58,6 +60,18 @@ def topic_parser(message, sender):
 def invite_parser(message, sender):
 	return '-!- %s' % (message)
 
+def splitjoin_parser(message, sender):
+	items = message.split('#:#')
+	users = ', '.join([item[:item.find('!')] for item in items[:-1]])
+	servers = items[-1].split(' ')
+	return '--> Netsplit between %s and %s ended. Joined: %s' % (servers[0], servers[1], users)
+
+def splitquit_parser(message, sender):
+	items = message.split('#:#')
+	users = ', '.join([item[:item.find('!')] for item in items[:-1]])
+	servers = items[-1].split(' ')
+	return '<-- Netsplit between %s and %s. Quit: %s' % (servers[0], servers[1], users)
+
 parser_for_msgtype = {
 	MSG : msg_parser,
 	NOTICE : notice_parser,
@@ -69,5 +83,7 @@ parser_for_msgtype = {
 	QUIT : quit_parser,
 	KICK : kick_parser,
 	TOPIC : topic_parser,
-	INVITE : invite_parser
+	INVITE : invite_parser,
+	SPLITJOIN : splitjoin_parser,
+	SPLITQUIT : splitquit_parser
 }
