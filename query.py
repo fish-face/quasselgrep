@@ -89,7 +89,7 @@ class Query:
 		"""Common start to queries
 
 		If only_ids is specified, only request IDs, not full records."""
-		query = ["SELECT backlog.messageid" + (',' if not only_ids else '')]
+		query = ["SELECT backlog.messageid, " + ('' if not only_ids else 'buffer.buffername')]
 
 		if not only_ids:
 			if self.options.db_type == 'postgres':
@@ -148,7 +148,12 @@ class Query:
 			#First find all "possible" ids of matching rows - so ignoring
 			#the search parameters apart from user, network, buffer and time.
 			self.execute_query(*self.allpossible_query())
-			allids = [res[0] for res in self.cursor.fetchall()]
+			#allids = dict([(res[1], res[0]) for res in self.cursor.fetchall()])
+			allids = {}
+			for res in self.cursor:
+				if res[1] not in allids:
+					allids[res[1]] = []
+				allids[res[1]].append(res[0])
 
 			#Then run the actual search, retrieving only the IDs
 			self.execute_query(*self.search_query(only_ids=True))
@@ -159,8 +164,8 @@ class Query:
 			ids = []
 			gaps = [] #This will hold indices where we should insert a separator
 			for result in self.cursor:
-				idx = allids.index(result[0])
-				to_add = allids[idx-context:idx+context+1]
+				idx = allids[result[1]].index(result[0])
+				to_add = allids[result[1]][idx-context:idx+context+1]
 				if to_add[0] not in ids and ids:
 					#Add len(gaps) since results will get longer as we add
 					#more separators
