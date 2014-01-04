@@ -37,6 +37,7 @@ See the relevant sections for how to run quasselgrep as a server, or use it to c
 
 You can get context around search results with the -C option, making it easier to work out what was going on at the time someone said something.
 This is quite database-intensive, and is in any case best used for queries that will return few results (e.g. using a short time-period.)
+In particular, using this option without either the `-t` or `-b` options is liable to be inordinately slow.
 
 Examples
 ---
@@ -115,6 +116,14 @@ Performance
 
 Quassel's backlog constitutes a rather large database table, so some queries are going to take a while to run.
 That said, Quasselgrep shouldn't be too slow with a reasonably-sized PostgreSQL database, for reasonable queries, so let me know if you're in this situation but are experiencing slowness.
+One thing that can make a big difference is adding a database index for message times; this means that a search for results with the `-t` parameter are much more efficient.
+To do this, connect to the database as the quassel user and run the following command:
+
+```sql
+CREATE INDEX CONCURRENTLY backlog_time ON backlog (time);
+```
+
+(Don't attempt to do this if you don't know what you're doing)
 
 Of course if you're using SQLite, all bets are off!
 See the [migration page](http://bugs.quassel-irc.org/projects/1/wiki/PostgreSQL) on the Quassel site for instructions on how to migrate if this is causing issues.
