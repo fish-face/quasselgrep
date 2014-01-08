@@ -46,7 +46,7 @@ class Query:
 			'user' : Param('user', 'quasseluser.username = %(param)s'),
 			'network' : Param('network', 'network.networkname LIKE %(param)s'),
 			'buffer' : Param('buffer', 'buffer.buffername LIKE %(param)s'),
-			'sender' : Param('sender', 'sender.sender = %(param)s OR sender.sender LIKE %(param)s', ['sender_pattern']),
+			'sender' : Param('sender', '(sender.sender = %(param)s OR sender.sender LIKE %(param)s)', ['sender_pattern']),
 			'fromtime' : Param('fromtime', 'backlog.time > %(param)s'),
 			'totime' : Param('totime', 'backlog.time < %(param)s'),
 		}
