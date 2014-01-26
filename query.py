@@ -1,4 +1,5 @@
 import output
+from msgtypes import *
 
 from time import time
 from datetime import datetime
@@ -14,11 +15,11 @@ class Param:
 	def __init__(self, name, clause, morenames=[]):
 		self.names = [name] + morenames
 		self.clause = clause
-	
+
 class Query:
 	"""Represents a single query to the database"""
 
-	def __init__(self, cursor, options, text, user, network='', buffer='', sender='', timerange=None):
+	def __init__(self, cursor, options, text, user, network='', buffer='', sender='', timerange=None, inclusive=False):
 		self.cursor = cursor
 		self.options = options
 
@@ -40,6 +41,11 @@ class Query:
 				self.fromtime = self.fromtime.strftime('%s')
 				self.totime = self.totime.strftime('%s')
 
+		if inclusive:
+			self.msg_types = (MSG, NOTICE, ACTION, NICK, MODE, JOIN, PART, QUIT, KICK, TOPIC, INVITE, SPLITJOIN, SPLITQUIT)
+		else:
+			self.msg_types = (MSG, NOTICE, ACTION)
+
 		#TODO Consider changing this to equality for buffer
 		self.params = {
 			'text' : Param('text', 'backlog.message LIKE %(param)s'),
@@ -49,6 +55,7 @@ class Query:
 			'sender' : Param('sender', '(sender.sender = %(param)s OR sender.sender LIKE %(param)s)', ['sender_pattern']),
 			'fromtime' : Param('fromtime', 'backlog.time > %(param)s'),
 			'totime' : Param('totime', 'backlog.time < %(param)s'),
+			'msg_types' : Param('msg_types', 'backlog.type IN %(param)s'),
 		}
 
 	#def get_senders(self, sender):

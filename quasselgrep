@@ -191,7 +191,7 @@ class QuasselGrep:
 			search = '%%%s%%' % (search)
 
 		#Create and run query
-		query = Query(cursor, options, search, options.username, options.network, options.buffer, options.sender, timerange)
+		query = Query(cursor, options, search, options.username, options.network, options.buffer, options.sender, timerange, options.inclusive)
 		return query
 
 	def server_request(self, command, socket):
