@@ -11,7 +11,7 @@ class Db:
 			except ImportError:
 				raise ValueError('Cannot open an sqlite database without sqlite3 python module')
 
-			self.connection = dbmodule.connect(options.db_name)
+			self.connection = dbmodule.connect(options.db_name, check_same_thread=False)
 		elif options.db_type == 'postgres':
 			options.param_string = '%s'
 			try:
