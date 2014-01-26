@@ -12,9 +12,35 @@ from util import salt_hash
 import sys
 from datetime import datetime
 from optparse import OptionParser
+from optparse import IndentedHelpFormatter as Formatter
 
 version = 'Quasselgrep 0.1\nCopyright (c) 2013 Chris Le Sueur\nThis program is licensed under the GNU General Public License'
 usage = '%prog [options] <keywords>'
+
+def format_option_strings(self, option):
+	"""Return a comma-separated list of option strings & metavariables."""
+	if option.takes_value():
+		metavar = option.metavar or option.dest.upper()
+		if not option._long_opts:
+			short_opts = [self._short_opt_fmt % (sopt, metavar)
+					for sopt in option._short_opts]
+		else:
+			short_opts = option._short_opts
+
+		long_opts = [self._long_opt_fmt % (lopt, metavar)
+				for lopt in option._long_opts]
+	else:
+		short_opts = option._short_opts
+		long_opts = option._long_opts
+
+	if self.short_first:
+		opts = short_opts + long_opts
+	else:
+		opts = long_opts + short_opts
+
+	return ", ".join(opts)
+
+Formatter.format_option_strings = format_option_strings
 
 class QuasselGrep:
 	def __init__(self):
@@ -35,7 +61,7 @@ class QuasselGrep:
 
 	def setup_optparser(self):
 		"""Parse command line arguments using optarg"""
-		parser = OptionParser(version=version, usage=usage)
+		parser = OptionParser(version=version, usage=usage, formatter=Formatter())
 		parser.add_option('--db', dest='db_type', metavar='[postgres|sqlite]',
 						  help='Type of database')
 		parser.add_option('--dbname', dest='db_name', metavar='NAME',
@@ -61,6 +87,8 @@ class QuasselGrep:
 					  help='Specify the nickname to search for')
 		parser.add_option('-t', '--time', dest='timerange', metavar='RANGE',
 					  help='Time range. See README for details.')
+		parser.add_option('-i', '--inclusive', dest='inclusive', action='store_true',
+		              help='Also search for joins, parts, etc.')
 
 		parser.add_option('--server', dest='server', action='store_true')
 		parser.add_option('-H', '--host', dest='hostname', help='Connect to quasselgrep server at HOSTNAME')
