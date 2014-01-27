@@ -19,18 +19,18 @@ class Param:
 class Query:
 	"""Represents a single query to the database"""
 
-	def __init__(self, cursor, options, text, user, network='', buffer='', sender='', timerange=None, inclusive=False):
+	def __init__(self, cursor, options, text, timerange=None):
 		self.cursor = cursor
 		self.options = options
 
 		self.text = text
-		self.user = user
+		self.user = options.username
 
-		self.network = network
-		self.buffer = buffer
-		self.sender = sender
-		if sender:
-			self.sender_pattern = sender + '!%'
+		self.network = options.network
+		self.buffer = options.buffer
+		self.sender = options.sender
+		if options.sender:
+			self.sender_pattern = options.sender + '!%'
 
 		self.timerange = timerange
 		if timerange:
@@ -41,7 +41,7 @@ class Query:
 				self.fromtime = self.fromtime.strftime('%s')
 				self.totime = self.totime.strftime('%s')
 
-		if inclusive:
+		if options.inclusive:
 			self.msg_types = (MSG, NOTICE, ACTION, NICK, MODE, JOIN, PART, QUIT, KICK, TOPIC, INVITE, SPLITJOIN, SPLITQUIT)
 		else:
 			self.msg_types = (MSG, NOTICE, ACTION)
