@@ -46,6 +46,9 @@ class Query:
 		else:
 			self.msg_types = (MSG, NOTICE, ACTION)
 
+		if options.limit:
+			self.limit = int(options.limit)
+
 		#TODO Consider changing this to equality for buffer
 		self.params = {
 			'text' : Param('text', 'backlog.message LIKE %(param)s'),
@@ -120,7 +123,14 @@ class Query:
 		query = self.basequery(only_ids)
 		query.append(self.where_clause(params))
 
-		query.append("ORDER BY backlog.time")
+		if self.limit:
+			query.insert(0,"SELECT * FROM (")
+			query.append("ORDER BY backlog.time DESC")
+			query.append("LIMIT %s) AS query")
+			query.append("ORDER BY query.time")
+			params.append("limit")
+		else:
+			query.append("ORDER BY backlog.time")
 		#print '\n'.join(query)
 		return ('\n'.join(query), [getattr(self,param) for param in params])
 
@@ -131,6 +141,7 @@ class Query:
 		query.append(self.where_clause(params))
 
 		query.append("ORDER BY backlog.time")
+
 		return ('\n'.join(query), [getattr(self,param) for param in params])
 
 	def get_rows_with_ids(self, ids):

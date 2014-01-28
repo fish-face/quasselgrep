@@ -49,3 +49,9 @@ def update_options(options):
 		except:
 			raise ValueError("Context must be an integer, not %s" % (options.context))
 	
+	if options.limit:
+		try:
+			n = int(options.limit)
+		except:
+			raise ValueError("Limit must be an integer, not %s" % (options.limit))
+
