@@ -48,6 +48,8 @@ class Query:
 
 		if options.limit:
 			self.limit = int(options.limit)
+		else:
+			self.limit = 0
 
 		#TODO Consider changing this to equality for buffer
 		self.params = {
