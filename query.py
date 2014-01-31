@@ -181,7 +181,7 @@ class Query:
 			#Now work out the IDs of ALL records to output, including
 			#the context lines
 			context = int(self.options.context)
-			ids = []
+			ids = set()
 			gaps = [] #This will hold indices where we should insert a separator
 			for result in self.cursor:
 				idx = allids[result[1]].index(result[0])
@@ -190,7 +190,7 @@ class Query:
 					#Add len(gaps) since results will get longer as we add
 					#more separators
 					gaps.append(len(ids)+len(gaps))
-				ids += to_add
+				ids |= to_add
 
 			#Now get full records of the computed IDs
 			if ids:
