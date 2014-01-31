@@ -35,8 +35,13 @@ def start(options, search, program):
 			continue
 		if getattr(options, opt_name) is None:
 			continue
+		value = getattr(options, opt_name)
+		# A bit hackish: we need a value that will evaluate to false, and str(False) does not.
+		# Ideally we should parse it properly on the server side, but it's hard.
+		if isinstance(value, bool) or option.action == 'store_true' or option.action == 'store_false':
+			value = '1' if value else ''
 
-		command += '%s=%s\n' % (opt_name, escape(str(getattr(options, opt_name))))
+		command += '%s=%s\n' % (opt_name, escape(str(value)))
 
 	command += 'SEARCH=%s\n' % (search)
 	sock.sendall(command)
