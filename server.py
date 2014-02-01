@@ -73,7 +73,7 @@ class QuasselGrepHandler(BaseRequestHandler):
 		else:
 			socket.sendall('No results.\n')
 
-host = 'localhost'
+host = ''
 port = 9001
 def start(program, options):
 	ThreadingTCPServer.allow_reuse_address = True
