@@ -4,10 +4,10 @@ import socket
 from util import salt_and_hash, getdata, escape
 
 def start(options, search, program):
-	if not hasattr(options, 'hostname'):
+	if not getattr(options, 'hostname', None):
 		print "Error: You must supply a hostname."
 		return
-	if not hasattr(options, 'password'):
+	if not getattr(options, 'password', None):
 		print "Error: You must supply a password"
 		return
 
