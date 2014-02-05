@@ -23,7 +23,10 @@ class Db:
 			                                   user=options.db_user,
 			                                   password=options.db_password,
 			                                   host=options.db_host)
-			self.connection.set_session(readonly=True)
+			try:
+				self.connection.set_session(readonly=True)
+			except AttributeError:
+				pass
 		else:
 			raise ValueError('Invalid database type: %s' % (options.db_type))
 
