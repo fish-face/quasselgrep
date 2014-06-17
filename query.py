@@ -97,11 +97,19 @@ class Query:
 
 		return 'WHERE ' + ' AND '.join(ands)
 
+	def contextbits(self):
+		if self.options.context:
+			leads = ['LEAD(backlog.messageid, %d) OVER (PARTITION BY backlog.bufferid ORDER BY backlog.time ASC) AS id_%d' % (i, i) for i in range(1, int(self.options.context)+1)]
+			lags = ['LAG(backlog.messageid, %d) OVER (PARTITION BY backlog.bufferid ORDER BY backlog.time ASC) AS id_%d' % (i, int(self.options.context)+i) for i in range(1, int(self.options.context)+1)]
+			return ', ' + ', '.join(lags + leads)
+		else:
+			return ''
+
 	def basequery(self, only_ids=False):
 		"""Common start to queries
 
 		If only_ids is specified, only request IDs, not full records."""
-		query = ["SELECT backlog.messageid, " + ('' if not only_ids else 'buffer.buffername')]
+		query = ["SELECT backlog.messageid, " + ('' if not only_ids else 'buffer.buffername ')]
 
 		if not only_ids:
 			if self.options.db_type == 'postgres':
@@ -109,13 +117,14 @@ class Query:
 			elif self.options.db_type == 'sqlite':
 				query.append("       datetime(backlog.time, 'unixepoch'),")
 			query += ["       backlog.type, backlog.message,",
-					  "       sender.sender, buffer.buffername, network.networkname"]
+					  "       sender.sender, buffer.buffername, network.networkname",
+					  "       " + self.contextbits()]
 
 		query += ["FROM backlog",
-		          "JOIN sender ON sender.senderid = backlog.senderid",
-		          "JOIN buffer ON buffer.bufferid = backlog.bufferid",
-		          "JOIN network ON network.networkid = buffer.networkid",
-		          "JOIN quasseluser ON network.userid = quasseluser.userid"]
+				  "JOIN sender ON sender.senderid = backlog.senderid",
+				  "JOIN buffer ON buffer.bufferid = backlog.bufferid",
+				  "JOIN network ON network.networkid = buffer.networkid",
+				  "JOIN quasseluser ON network.userid = quasseluser.userid"]
 
 		return query
 
@@ -146,6 +155,21 @@ class Query:
 
 		return ('\n'.join(query), [getattr(self,param) for param in params])
 
+	def context_query(self, ids):
+		params = self.filter_params(["user", "network", "buffer", "fromtime", "totime"])
+		query = self.basequery()
+		query.insert(0, 'SELECT * FROM (')
+		query.append(self.where_clause(params))
+		query.append("ORDER BY backlog.time")
+		query.append(') x')
+
+		ors = ['messageid IN %s']
+		ors += ['id_%d IN %s' % (i+1, self.options.param_string) for i in range(int(self.options.context)*2)]
+
+		query.append('WHERE (' + ' OR '.join(ors) + ')')
+
+		return ('\n'.join(query), [getattr(self,param) for param in params] + ([tuple(ids)] * ((int(self.options.context)*2)+1)))
+
 	def get_rows_with_ids(self, ids):
 		"""Return full records of given ids"""
 		query = self.basequery()
@@ -153,7 +177,6 @@ class Query:
 		query.append("ORDER BY backlog.time")
 
 		return ('\n'.join(query), (tuple(ids),))
-
 
 	def run(self):
 		"""Run a database query according to options
@@ -167,41 +190,10 @@ class Query:
 		if self.options.context:
 			#First find all "possible" ids of matching rows - so ignoring
 			#the search parameters apart from user, network, buffer and time.
-			self.execute_query(*self.allpossible_query())
-			#allids = dict([(res[1], res[0]) for res in self.cursor.fetchall()])
-			allids = {}
-			for res in self.cursor:
-				if res[1] not in allids:
-					allids[res[1]] = []
-				allids[res[1]].append(res[0])
-
-			#Then run the actual search, retrieving only the IDs
 			self.execute_query(*self.search_query(only_ids=True))
-
-			#Now work out the IDs of ALL records to output, including
-			#the context lines
-			context = int(self.options.context)
-			ids = []
-			gaps = [] #This will hold indices where we should insert a separator
-			for result in self.cursor:
-				idx = allids[result[1]].index(result[0])
-				to_add = allids[result[1]][idx-context:idx+context+1]
-				if to_add[0] not in ids and ids:
-					#Add len(gaps) since results will get longer as we add
-					#more separators
-					gaps.append(len(ids)+len(gaps))
-				ids += to_add
-
-			#Now get full records of the computed IDs
-			if ids:
-				self.execute_query(*self.get_rows_with_ids(ids))
-
-				#Finally insert the separators
-				results = self.cursor.fetchall()
-				for gap_index in gaps:
-					results.insert(gap_index, None)
-			else:
-				results = []
+			ids = [res[0] for res in self.cursor]
+			self.execute_query(*self.context_query(ids))
+			results = self.cursor.fetchall()
 		else:
 			#Simple case
 			if not self.options.debug:
