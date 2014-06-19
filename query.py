@@ -255,8 +255,11 @@ class Query:
 			#the search parameters apart from user, network, buffer and time.
 			self.execute_query(*self.search_query(only_ids=True))
 			ids = [res[0] for res in self.cursor]
-			self.execute_query(*self.context_query(ids))
-			results = self.sort_results_for_context(self.cursor.fetchall())
+			if ids:
+				self.execute_query(*self.context_query(ids))
+				results = self.sort_results_for_context(self.cursor.fetchall())
+			else:
+				results = []
 		else:
 			#Simple case
 			if not self.options.debug:
