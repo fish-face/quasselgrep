@@ -99,9 +99,11 @@ class Query:
 
 	def contextbits(self):
 		if self.options.context:
-			leads = ['LEAD(backlog.messageid, %d) OVER (PARTITION BY backlog.bufferid ORDER BY backlog.time ASC) AS id_%d' % (i, i) for i in range(1, int(self.options.context)+1)]
-			lags = ['LAG(backlog.messageid, %d) OVER (PARTITION BY backlog.bufferid ORDER BY backlog.time ASC) AS id_%d' % (i, int(self.options.context)+i) for i in range(1, int(self.options.context)+1)]
-			return ', ' + ', '.join(lags + leads)
+			ctxt = self.options.context
+			lags = ['       LAG(backlog.messageid, %d) OVER ctxt_window AS id_%d,' % (i, i) for i in range(1, ctxt+1)]
+			leads = ['       LEAD(backlog.messageid, %d) OVER ctxt_window AS id_%d,' % (i, ctxt+i) for i in range(1, ctxt+1)]
+			leads[-1] = leads[-1][:-1]
+			return lags + leads
 		else:
 			return ''
 
@@ -117,14 +119,15 @@ class Query:
 			elif self.options.db_type == 'sqlite':
 				query.append("       datetime(backlog.time, 'unixepoch'),")
 			query += ["       backlog.type, backlog.message,",
-					  "       sender.sender, buffer.buffername, network.networkname",
-					  "       " + self.contextbits()]
+					  "       sender.sender, buffer.buffername, network.networkname"
+			 + (',' if self.options.context else '')]
+			query += self.contextbits()
 
 		query += ["FROM backlog",
-				  "JOIN sender ON sender.senderid = backlog.senderid",
-				  "JOIN buffer ON buffer.bufferid = backlog.bufferid",
-				  "JOIN network ON network.networkid = buffer.networkid",
-				  "JOIN quasseluser ON network.userid = quasseluser.userid"]
+		          "JOIN sender ON sender.senderid = backlog.senderid",
+		          "JOIN buffer ON buffer.bufferid = backlog.bufferid",
+		          "JOIN network ON network.networkid = buffer.networkid",
+		          "JOIN quasseluser ON network.userid = quasseluser.userid"]
 
 		return query
 
@@ -158,17 +161,24 @@ class Query:
 	def context_query(self, ids):
 		params = self.filter_params(["user", "network", "buffer", "fromtime", "totime"])
 		query = self.basequery()
-		query.insert(0, 'SELECT * FROM (')
+
+		context_for = '(CASE True WHEN messageid in %s THEN messageid ' + ' '.join(['WHEN id_%d in %%s THEN id_%d' % (i+1, i+1) for i in range(self.options.context*2)]) + ' END) as context_for'
+		formats = tuple([tuple(ids)] * ((self.options.context*2) + 1))
+		context_for = context_for % formats
+
+		query.insert(0, 'SELECT *, %s FROM (' % context_for)
 		query.append(self.where_clause(params))
+		query += ["WINDOW ctxt_window AS (PARTITION BY backlog.bufferid ORDER BY backlog.time, backlog.messageid ASC)"]
 		query.append("ORDER BY backlog.time")
 		query.append(') x')
 
-		ors = ['messageid IN %s']
-		ors += ['id_%d IN %s' % (i+1, self.options.param_string) for i in range(int(self.options.context)*2)]
+		ors = ['messageid IN %s' % (tuple(ids),)]
+		ors += ['id_%d IN %s' % (i+1, tuple(ids)) for i in range(self.options.context*2)]
 
 		query.append('WHERE (' + ' OR '.join(ors) + ')')
+		query.append('ORDER BY time, messageid')
 
-		return ('\n'.join(query), [getattr(self,param) for param in params] + ([tuple(ids)] * ((int(self.options.context)*2)+1)))
+		return ('\n'.join(query), [getattr(self,param) for param in params])
 
 	def get_rows_with_ids(self, ids):
 		"""Return full records of given ids"""
@@ -177,6 +187,59 @@ class Query:
 		query.append("ORDER BY backlog.time")
 
 		return ('\n'.join(query), (tuple(ids),))
+
+	def sort_results_for_context(self, results):
+		def get_row(i=0):
+			current_row = results.pop(i)
+			sorted_res.append(current_row)
+			scanner.current_id = current_row[0]
+			scanner.current_centre = current_row[key_col]
+			scanner.current_buff = current_row[5]
+
+		class Scanner(object):
+			# Just to hold state while sorting
+			pass
+
+		# "centre" rows are those which match the actual query, everything
+		# else is context.
+
+		sorted_res = []
+		ctxt = self.options.context
+		scanner = Scanner()
+		key_col = 7+ctxt*2
+		while results:
+			sorted_res.append(None)
+			get_row()
+			# Retrieve pre-context until we find centre row
+			i = 0
+			while scanner.current_id != scanner.current_centre:
+				if i >= len(results):
+					# This should not happen
+					break
+				if results[i][key_col] == scanner.current_centre:
+					get_row(i)
+				else:
+					i += 1
+			# Search for post-context
+			got_ctxt = 0
+			i = 0
+			while got_ctxt < ctxt:
+				if i >= len(results):
+					# There are not enough context rows
+					break
+				if results[i][key_col] == scanner.current_centre:
+					# Got post-context
+					got_ctxt += 1
+					get_row(i)
+				elif results[i][key_col] == results[i][0] and results[i][5] == scanner.current_buff:
+					# Found a central row in context-range
+					got_ctxt = 0
+					get_row(i)
+				else:
+					# Nothing
+					i += 1
+
+		return sorted_res
 
 	def run(self):
 		"""Run a database query according to options
@@ -193,7 +256,7 @@ class Query:
 			self.execute_query(*self.search_query(only_ids=True))
 			ids = [res[0] for res in self.cursor]
 			self.execute_query(*self.context_query(ids))
-			results = self.cursor.fetchall()
+			results = self.sort_results_for_context(self.cursor.fetchall())
 		else:
 			#Simple case
 			if not self.options.debug:
