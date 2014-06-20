@@ -16,6 +16,50 @@ class Param:
 		self.names = [name] + morenames
 		self.clause = clause
 
+
+class ContextGroup(object):
+	def __init__(self, row, ctxt_for_col, ctxt):
+		self.ctxt_for_col = ctxt_for_col
+		self.ctxt = ctxt
+
+		self.rows = [None]
+		self.buff = row[5]
+		self.first_for = row[ctxt_for_col]
+
+		self.got_pre_rows = -1
+		self.got_post_rows = 0
+		self.post = False
+
+		self.add_row(row)
+
+	def matches_row(self, row):
+		return row[5] == self.buff and row[self.ctxt_for_col] == self.ctxt_for
+
+	def add_row(self, row):
+		self.rows.append(row)
+		self.ctxt_for = row[self.ctxt_for_col]
+
+		# Track whether we have enough rows before and after
+		if self.post:
+			self.got_post_rows += 1
+		else:
+			self.got_pre_rows += 1
+
+		if row[0] == row[self.ctxt_for_col]:
+			self.got_post_rows = 0
+			self.post = True
+
+	def add_group(self, other):
+		self.rows += other.rows[1:]
+		other.rows = []
+
+	def pre_finished(self):
+		return self.got_pre_rows >= self.ctxt
+
+	def finished(self):
+		return self.got_post_rows >= self.ctxt
+
+
 class Query:
 	"""Represents a single query to the database"""
 
@@ -162,6 +206,8 @@ class Query:
 		params = self.filter_params(["user", "network", "buffer", "fromtime", "totime"])
 		query = self.basequery()
 
+		# Add a column which indicates which message id each row is context for
+		# This is kind of ugly and might be better done in python
 		context_for = '(CASE True WHEN messageid in %s THEN messageid ' + ' '.join(['WHEN id_%d in %%s THEN id_%d' % (i+1, i+1) for i in range(self.options.context*2)]) + ' END) as context_for'
 		formats = tuple([tuple(ids)] * ((self.options.context*2) + 1))
 		context_for = context_for % formats
@@ -189,57 +235,40 @@ class Query:
 		return ('\n'.join(query), (tuple(ids),))
 
 	def sort_results_for_context(self, results):
-		def get_row(i=0):
-			current_row = results.pop(i)
-			sorted_res.append(current_row)
-			scanner.current_id = current_row[0]
-			scanner.current_centre = current_row[key_col]
-			scanner.current_buff = current_row[5]
-
-		class Scanner(object):
-			# Just to hold state while sorting
-			pass
-
-		# "centre" rows are those which match the actual query, everything
-		# else is context.
-
-		sorted_res = []
+		"""Sort context results for display"""
+		groups = []
+		group_for = {}
 		ctxt = self.options.context
-		scanner = Scanner()
-		key_col = 7+ctxt*2
-		while results:
-			sorted_res.append(None)
-			get_row()
-			# Retrieve pre-context until we find centre row
-			i = 0
-			while scanner.current_id != scanner.current_centre:
-				if i >= len(results):
-					# This should not happen
-					break
-				if results[i][key_col] == scanner.current_centre:
-					get_row(i)
-				else:
-					i += 1
-			# Search for post-context
-			got_ctxt = 0
-			i = 0
-			while got_ctxt < ctxt:
-				if i >= len(results):
-					# There are not enough context rows
-					break
-				if results[i][key_col] == scanner.current_centre:
-					# Got post-context
-					got_ctxt += 1
-					get_row(i)
-				elif results[i][key_col] == results[i][0] and results[i][5] == scanner.current_buff:
-					# Found a central row in context-range
-					got_ctxt = 0
-					get_row(i)
-				else:
-					# Nothing
-					i += 1
+		ctxt_for_col = 7+ctxt*2
+		# Loop over rows and group according to which row they are context for
+		for row in results:
+			buff = row[5]
+			if buff in group_for and not group_for[buff].finished() and group_for[buff].matches_row(row):
+					group_for[buff].add_row(row)
+			else:
+				groups.append(ContextGroup(row, ctxt_for_col, ctxt))
+				group_for[buff] = groups[-1]
 
-		return sorted_res
+		# Some groups may have not enough context before the matching line; merge
+		# them with a previous group
+		for i, g in enumerate(groups[:-1]):
+			if not g.rows:
+				# Group already got squashed
+				continue
+			for h in groups[i+1:]:
+				if h.buff != g.buff:
+					continue
+				if not h.pre_finished():
+					# Needs more context; do merge
+					g.add_group(h)
+				else:
+					# Don't try and merge further groups with this one
+					break
+
+		# Sort the groups according to the first row of the group which matched
+		# the actual query
+		groups.sort(key=lambda x:x.first_for)
+		return (row for g in groups for row in g.rows)
 
 	def run(self):
 		"""Run a database query according to options
