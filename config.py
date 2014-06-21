@@ -40,15 +40,15 @@ def update_options(options):
 	for (key, value) in config.items():
 		if not getattr(options, key, None):
 			setattr(options, key, value)
-	
+
 	if options.db_type and options.db_type not in ('sqlite', 'postgres'):
 		raise ValueError("dbtype must be one of sqlite or postgres, not '%s'" % (options.db_type))
 	if options.context:
 		try:
-			n = int(options.context)
+			options.context = int(options.context)
 		except:
 			raise ValueError("Context must be an integer, not %s" % (options.context))
-	
+
 	if options.limit:
 		try:
 			n = int(options.limit)

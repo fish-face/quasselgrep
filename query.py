@@ -16,6 +16,50 @@ class Param:
 		self.names = [name] + morenames
 		self.clause = clause
 
+
+class ContextGroup(object):
+	def __init__(self, row, ctxt_for_col, ctxt):
+		self.ctxt_for_col = ctxt_for_col
+		self.ctxt = ctxt
+
+		self.rows = [None]
+		self.buff = row[5]
+		self.first_for = row[ctxt_for_col]
+
+		self.got_pre_rows = -1
+		self.got_post_rows = 0
+		self.post = False
+
+		self.add_row(row)
+
+	def matches_row(self, row):
+		return row[5] == self.buff and row[self.ctxt_for_col] == self.ctxt_for
+
+	def add_row(self, row):
+		self.rows.append(row)
+		self.ctxt_for = row[self.ctxt_for_col]
+
+		# Track whether we have enough rows before and after
+		if self.post:
+			self.got_post_rows += 1
+		else:
+			self.got_pre_rows += 1
+
+		if row[0] == row[self.ctxt_for_col]:
+			self.got_post_rows = 0
+			self.post = True
+
+	def add_group(self, other):
+		self.rows += other.rows[1:]
+		other.rows = []
+
+	def pre_finished(self):
+		return self.got_pre_rows >= self.ctxt
+
+	def finished(self):
+		return self.got_post_rows >= self.ctxt
+
+
 class Query:
 	"""Represents a single query to the database"""
 
@@ -97,11 +141,21 @@ class Query:
 
 		return 'WHERE ' + ' AND '.join(ands)
 
+	def contextbits(self):
+		if self.options.context:
+			ctxt = self.options.context
+			lags = ['       LAG(backlog.messageid, %d) OVER ctxt_window AS id_%d,' % (i, i) for i in range(1, ctxt+1)]
+			leads = ['       LEAD(backlog.messageid, %d) OVER ctxt_window AS id_%d,' % (i, ctxt+i) for i in range(1, ctxt+1)]
+			leads[-1] = leads[-1][:-1]
+			return lags + leads
+		else:
+			return ''
+
 	def basequery(self, only_ids=False):
 		"""Common start to queries
 
 		If only_ids is specified, only request IDs, not full records."""
-		query = ["SELECT backlog.messageid, " + ('' if not only_ids else 'buffer.buffername')]
+		query = ["SELECT backlog.messageid, " + ('' if not only_ids else 'buffer.buffername ')]
 
 		if not only_ids:
 			if self.options.db_type == 'postgres':
@@ -109,7 +163,9 @@ class Query:
 			elif self.options.db_type == 'sqlite':
 				query.append("       datetime(backlog.time, 'unixepoch'),")
 			query += ["       backlog.type, backlog.message,",
-					  "       sender.sender, buffer.buffername, network.networkname"]
+					  "       sender.sender, buffer.buffername, network.networkname"
+			 + (',' if self.options.context else '')]
+			query += self.contextbits()
 
 		query += ["FROM backlog",
 		          "JOIN sender ON sender.senderid = backlog.senderid",
@@ -146,6 +202,30 @@ class Query:
 
 		return ('\n'.join(query), [getattr(self,param) for param in params])
 
+	def context_query(self, ids):
+		params = self.filter_params(["user", "network", "buffer", "fromtime", "totime"])
+		query = self.basequery()
+
+		# Add a column which indicates which message id each row is context for
+		# This is kind of ugly and might be better done in python
+		context_for = '(CASE True WHEN messageid in %s THEN messageid ' + ' '.join(['WHEN id_%d in %%s THEN id_%d' % (i+1, i+1) for i in range(self.options.context*2)]) + ' END) as context_for'
+		formats = tuple([tuple(ids)] * ((self.options.context*2) + 1))
+		context_for = context_for % formats
+
+		query.insert(0, 'SELECT *, %s FROM (' % context_for)
+		query.append(self.where_clause(params))
+		query += ["WINDOW ctxt_window AS (PARTITION BY backlog.bufferid ORDER BY backlog.time, backlog.messageid ASC)"]
+		query.append("ORDER BY backlog.time")
+		query.append(') x')
+
+		ors = ['messageid IN %s' % (tuple(ids),)]
+		ors += ['id_%d IN %s' % (i+1, tuple(ids)) for i in range(self.options.context*2)]
+
+		query.append('WHERE (' + ' OR '.join(ors) + ')')
+		query.append('ORDER BY time, messageid')
+
+		return ('\n'.join(query), [getattr(self,param) for param in params])
+
 	def get_rows_with_ids(self, ids):
 		"""Return full records of given ids"""
 		query = self.basequery()
@@ -154,6 +234,41 @@ class Query:
 
 		return ('\n'.join(query), (tuple(ids),))
 
+	def sort_results_for_context(self, results):
+		"""Sort context results for display"""
+		groups = []
+		group_for = {}
+		ctxt = self.options.context
+		ctxt_for_col = 7+ctxt*2
+		# Loop over rows and group according to which row they are context for
+		for row in results:
+			buff = row[5]
+			if buff in group_for and not group_for[buff].finished() and group_for[buff].matches_row(row):
+					group_for[buff].add_row(row)
+			else:
+				groups.append(ContextGroup(row, ctxt_for_col, ctxt))
+				group_for[buff] = groups[-1]
+
+		# Some groups may have not enough context before the matching line; merge
+		# them with a previous group
+		for i, g in enumerate(groups[:-1]):
+			if not g.rows:
+				# Group already got squashed
+				continue
+			for h in groups[i+1:]:
+				if h.buff != g.buff:
+					continue
+				if not h.pre_finished():
+					# Needs more context; do merge
+					g.add_group(h)
+				else:
+					# Don't try and merge further groups with this one
+					break
+
+		# Sort the groups according to the first row of the group which matched
+		# the actual query
+		groups.sort(key=lambda x:x.first_for)
+		return (row for g in groups for row in g.rows)
 
 	def run(self):
 		"""Run a database query according to options
@@ -167,39 +282,11 @@ class Query:
 		if self.options.context:
 			#First find all "possible" ids of matching rows - so ignoring
 			#the search parameters apart from user, network, buffer and time.
-			self.execute_query(*self.allpossible_query())
-			#allids = dict([(res[1], res[0]) for res in self.cursor.fetchall()])
-			allids = {}
-			for res in self.cursor:
-				if res[1] not in allids:
-					allids[res[1]] = []
-				allids[res[1]].append(res[0])
-
-			#Then run the actual search, retrieving only the IDs
 			self.execute_query(*self.search_query(only_ids=True))
-
-			#Now work out the IDs of ALL records to output, including
-			#the context lines
-			context = int(self.options.context)
-			ids = set()
-			gaps = [] #This will hold indices where we should insert a separator
-			for result in self.cursor:
-				idx = allids[result[1]].index(result[0])
-				to_add = allids[result[1]][idx-context:idx+context+1]
-				if to_add[0] not in ids and ids:
-					#Add len(gaps) since results will get longer as we add
-					#more separators
-					gaps.append(len(ids)+len(gaps))
-				ids |= to_add
-
-			#Now get full records of the computed IDs
+			ids = [res[0] for res in self.cursor]
 			if ids:
-				self.execute_query(*self.get_rows_with_ids(ids))
-
-				#Finally insert the separators
-				results = self.cursor.fetchall()
-				for gap_index in gaps:
-					results.insert(gap_index, None)
+				self.execute_query(*self.context_query(ids))
+				results = self.sort_results_for_context(self.cursor.fetchall())
 			else:
 				results = []
 		else:
