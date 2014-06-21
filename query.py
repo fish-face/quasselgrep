@@ -17,6 +17,12 @@ class Param:
 		self.clause = clause
 
 
+class TypesParam(Param):
+	def __init__(self, msg_types):
+		self.names = []
+		self.clause = 'backlog.type IN %s' % (msg_types,)
+
+
 class ContextGroup(object):
 	def __init__(self, row, ctxt_for_col, ctxt):
 		self.ctxt_for_col = ctxt_for_col
@@ -104,7 +110,9 @@ class Query:
 			'sender' : Param('sender', '(sender.sender = %(param)s OR sender.sender LIKE %(param)s)', ['sender_pattern']),
 			'fromtime' : Param('fromtime', 'backlog.time > %(param)s'),
 			'totime' : Param('totime', 'backlog.time < %(param)s'),
-			'msg_types' : Param('msg_types', 'backlog.type IN %(param)s'),
+			# SQLite can't handle tuple parameters, and they're not from user
+			# input so just include them directly in the string
+			'msg_types' : TypesParam(self.msg_types),
 		}
 
 	#def get_senders(self, sender):
