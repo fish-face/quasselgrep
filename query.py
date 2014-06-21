@@ -226,14 +226,6 @@ class Query:
 
 		return ('\n'.join(query), [getattr(self,param) for param in params])
 
-	def get_rows_with_ids(self, ids):
-		"""Return full records of given ids"""
-		query = self.basequery()
-		query.append("WHERE backlog.messageid IN %s")
-		query.append("ORDER BY backlog.time")
-
-		return ('\n'.join(query), (tuple(ids),))
-
 	def sort_results_for_context(self, results):
 		"""Sort context results for display"""
 		groups = []
