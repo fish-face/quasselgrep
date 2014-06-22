@@ -41,13 +41,16 @@ def update_options(options):
 		if not getattr(options, key, None):
 			setattr(options, key, value)
 
-	if options.db_type and options.db_type not in ('sqlite', 'postgres'):
+	if options.db_type not in ('sqlite', 'postgres'):
 		raise ValueError("dbtype must be one of sqlite or postgres, not '%s'" % (options.db_type))
 	if options.context:
 		try:
 			options.context = int(options.context)
+			assert options.context >= 0
 		except:
-			raise ValueError("Context must be an integer, not %s" % (options.context))
+			raise ValueError("Context must be a non-negative integer, not %s" % (options.context))
+	if options.db_type == 'sqlite' and options.context:
+		raise ValueError('Printing context is not currently supported with an SQLite database')
 
 	if options.limit:
 		try:
