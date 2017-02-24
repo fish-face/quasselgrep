@@ -52,7 +52,7 @@ class QuasselGrep:
 		if query.options.debug:
 			for res in results: print res[0]
 		elif results:
-			for res in results: print query.format(res)
+			for res in results: print query.format(res).encode('ascii', 'ignore')
 		else:
 			print "No results found."
 
