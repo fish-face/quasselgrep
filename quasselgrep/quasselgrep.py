@@ -200,5 +200,8 @@ class QuasselGrep:
 	def server_request(self, command, socket):
 		pass
 
-if __name__ == '__main__':
+def main():
 	program = QuasselGrep()
+
+if __name__ == '__main__':
+	main()
