@@ -1,14 +1,16 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import sys
 import socket
 
-from util import salt_and_hash, getdata, escape
+from .util import salt_and_hash, getdata, escape
 
 def start(options, search, program):
 	if not getattr(options, 'hostname', None):
-		print "Error: You must supply a hostname."
+		print("Error: You must supply a hostname.")
 		return
 	if not getattr(options, 'password', None):
-		print "Error: You must supply a password"
+		print("Error: You must supply a password")
 		return
 
 	port = options.port if hasattr(options, 'port') else 9001
@@ -21,7 +23,7 @@ def start(options, search, program):
 	response = getdata(sock)[0]
 
 	if response[:5] != 'SALT=':
-		print 'Error: Did not understand server response.'
+		print('Error: Did not understand server response.')
 		return
 
 	salt = response[5:]

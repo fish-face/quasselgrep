@@ -1,5 +1,7 @@
-import output
-from msgtypes import *
+from __future__ import print_function
+from __future__ import absolute_import
+from . import output
+from .msgtypes import *
 
 from time import time
 from datetime import datetime
@@ -295,12 +297,12 @@ class Query:
 				self.execute_query(*self.search_query())
 			else:
 				query, params = self.search_query()
-				print query
-				print params
+				print(query)
+				print(params)
 				self.cursor.execute("EXPLAIN " + query, params)
 			results = self.cursor.fetchall()
 
-		print "Query completed in %.2f seconds" % (time() - start)
+		print("Query completed in %.2f seconds" % (time() - start))
 		return results
 
 	def execute_query(self, query, params=[]):
@@ -312,7 +314,7 @@ class Query:
 				thread.join(1)
 				if not thread.is_alive(): break
 		except KeyboardInterrupt:
-			print "Stopping."
+			print("Stopping.")
 			raise
 
 	def format(self, result):

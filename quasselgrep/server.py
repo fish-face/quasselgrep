@@ -1,8 +1,10 @@
+from __future__ import print_function
+from __future__ import absolute_import
 from SocketServer import ThreadingTCPServer, TCPServer, BaseRequestHandler
 from shlex import split
 from os import urandom
 
-from util import getdata
+from .util import getdata
 
 class AuthException(Exception):
 	pass
@@ -59,7 +61,7 @@ class QuasselGrepHandler(BaseRequestHandler):
 
 		try:
 			query = program.run(options, search, salt)
-		except AuthException, e:
+		except AuthException as e:
 			socket.sendall('Error: %s\n' % (e))
 			socket.close()
 			return
@@ -82,4 +84,4 @@ def start(program, options):
 	server.options = options
 
 	server.serve_forever()
-	print "Finishing."
+	print("Finishing.")

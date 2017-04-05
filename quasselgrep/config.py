@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 
 defaults = {
@@ -24,7 +25,7 @@ def update_options(options):
 		try:
 			execfile(conf_file, namespace)
 		except IOError:
-			print "Error: Could not open %s for reading; ignoring." % (conf_file)
+			print("Error: Could not open %s for reading; ignoring." % (conf_file))
 			use_config = False
 	else:
 		try:

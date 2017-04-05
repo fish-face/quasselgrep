@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 # Copyright 2013 Chris Le Sueur.
 # From dateparse.py, part of Whoosh, a python search library:
 
@@ -34,9 +36,9 @@ from datetime import datetime, timedelta
 
 from dateutil.relativedelta import relativedelta
 rcompile = re.compile
-from times import adatetime, timespan
-from times import fill_in, is_void, relative_days
-from times import TimeError
+from .times import adatetime, timespan
+from .times import fill_in, is_void, relative_days
+from .times import TimeError
 
 
 class DateParseError(Exception):
