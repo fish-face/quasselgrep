@@ -30,6 +30,7 @@ from __future__ import absolute_import
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Matt Chaput.
 
+from builtins import object, str
 import re
 import sys
 from datetime import datetime, timedelta
@@ -75,7 +76,7 @@ class ParserBase(object):
 	"""
 
 	def to_parser(self, e):
-		if isinstance(e, basestring):
+		if isinstance(e, str):
 			return Regex(e)
 		else:
 			return e
@@ -455,7 +456,7 @@ class Regex(ParserBase):
 
 	def extract(self, match):
 		d = match.groupdict()
-		for key, value in d.iteritems():
+		for key, value in d.items():
 			try:
 				value = int(value)
 				d[key] = value

@@ -1,5 +1,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from builtins import range
+from builtins import object
 from . import output
 from .msgtypes import *
 
@@ -12,7 +14,7 @@ maskre = re.compile('(?P<nick>.*)!(.*)@(.*)')
 MSG_NORMAL = 1
 MSG_ACTION = 4
 
-class Param:
+class Param(object):
 	"""Holds information about a parameter that can be searched on"""
 	def __init__(self, name, clause, morenames=[]):
 		self.names = [name] + morenames
@@ -68,7 +70,7 @@ class ContextGroup(object):
 		return self.got_post_rows >= self.ctxt
 
 
-class Query:
+class Query(object):
 	"""Represents a single query to the database"""
 
 	def __init__(self, cursor, options, text, timerange=None):
@@ -187,7 +189,7 @@ class Query:
 
 	def search_query(self, only_ids=False):
 		"""Normal query"""
-		params = self.filter_params(self.params.keys())
+		params = self.filter_params(list(self.params.keys()))
 		query = self.basequery(only_ids)
 		query.append(self.where_clause(params))
 

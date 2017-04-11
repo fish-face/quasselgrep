@@ -6,23 +6,23 @@ def getdata(socket):
 		data = socket.recv(1024)
 		if not data:
 			break
-		command += data
-		if data[-1] == '\n':
+		command += data.decode('utf-8')
+		if data[-1:] == b'\n':
 			break
 
 	return command.split('\n')
 
 def salt_and_hash(salt, password):
 	h = SHA.new()
-	h.update(password)
+	h.update(password.encode('utf-8'))
 	pwhash = h.hexdigest()
 
 	return salt_hash(salt, pwhash)
 
 def salt_hash(salt, pwhash):
 	h = SHA.new()
-	h.update(salt)
-	h.update(pwhash)
+	h.update(salt.encode('ascii'))
+	h.update(pwhash.encode('ascii'))
 
 	return h.hexdigest()
 

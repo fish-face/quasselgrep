@@ -3,6 +3,7 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
+from builtins import object, str
 from .db import Db
 from .query import Query
 from . import dateparse
@@ -43,7 +44,7 @@ def format_option_strings(self, option):
 
 Formatter.format_option_strings = format_option_strings
 
-class QuasselGrep:
+class QuasselGrep(object):
 	def __init__(self):
 		self.setup_optparser()
 
@@ -158,11 +159,11 @@ class QuasselGrep:
 
 		#Be a client, or a server.
 		if options.hostname and not self.server:
-			import client
+			from . import client
 			client.start(options, search, self)
 			return
 		if options.server and not self.server:
-			import server
+			from . import server
 			self.server = True
 			server.start(self, options)
 			return
@@ -176,8 +177,8 @@ class QuasselGrep:
 
 		#Users connecting to a server need to authenticate
 		if self.server:
-			import server
-			from util import salt_hash
+			from . import server
+			from .util import salt_hash
 			if not options.username or not options.password:
 				raise server.AuthException('You must specify a quassel username and password.')
 
