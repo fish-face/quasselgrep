@@ -88,8 +88,8 @@ class Query:
 				self.fromtime = timerange[0]
 				self.totime = timerange[1]
 			elif options.db_type == 'sqlite':
-				self.fromtime = self.fromtime.strftime('%s')
-				self.totime = self.totime.strftime('%s')
+				self.fromtime = timerange[0].strftime('%s')
+				self.totime = timerange[1].strftime('%s')
 
 		if options.inclusive:
 			self.msg_types = (MSG, NOTICE, ACTION, NICK, MODE, JOIN, PART, QUIT, KICK, TOPIC, INVITE, SPLITJOIN, SPLITQUIT)
