@@ -2,6 +2,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 import sys
 import socket
+from argparse import _StoreFalseAction, _StoreTrueAction
 
 from .util import salt_and_hash, getdata, escape
 
@@ -29,7 +30,7 @@ def start(options, search, program):
 	salt = response[5:]
 	options.password = salt_and_hash(salt, options.password)
 	command = ''
-	for option in program.parser.option_list:
+	for option in program.parser._actions:
 		opt_name = option.dest
 		if not opt_name or not hasattr(options, opt_name):
 			continue
@@ -40,7 +41,7 @@ def start(options, search, program):
 		value = getattr(options, opt_name)
 		# A bit hackish: we need a value that will evaluate to false, and str(False) does not.
 		# Ideally we should parse it properly on the server side, but it's hard.
-		if isinstance(value, bool) or option.action == 'store_true' or option.action == 'store_false':
+		if isinstance(value, bool) or isinstance(option, (_StoreTrueAction, _StoreFalseAction)):
 			value = '1' if value else ''
 
 		command += '%s=%s\n' % (opt_name, escape(str(value)))
