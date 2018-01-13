@@ -8,12 +8,29 @@ Requirements
 
 The python dateutil library is a requirement, and can be installed with pip:
 
-    # pip install python-dateutil
+	# pip install python-dateutil
 
 To run quasselgrep as a server or client, you'll need python's crypto module.
 For instance, on Debian-based systems, run:
 
 	# apt-get install python-crypto
+
+Installation
+---
+
+You don't need to install quasselgrep to use it but it might be more convenient. To do so run:
+
+	# sudo pip install .
+
+from the root directory. You can also install it as a local user, or by directly running setup.py, of course. Having done this you will be able to run the `quasselgrep` command at the shell. If you don't install it like this, either use:
+
+	$ ./launch.py <options>
+
+or
+
+	$ python -m quasselgrep <options>
+
+from the root directory. From now on it is assumed that you have installed quasselgrep in the normal way, though.
 
 Usage
 ---

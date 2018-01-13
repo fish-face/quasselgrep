@@ -28,6 +28,7 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Matt Chaput.
 
+from builtins import object
 import calendar
 import copy
 from datetime import date, datetime, timedelta
@@ -170,7 +171,7 @@ class adatetime(object):
 		"""
 
 		newadatetime = self.copy()
-		for key, value in kwargs.iteritems():
+		for key, value in kwargs.items():
 			if key in self.units:
 				setattr(newadatetime, key, value)
 			else:

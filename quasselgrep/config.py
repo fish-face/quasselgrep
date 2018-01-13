@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 
 defaults = {
@@ -13,6 +14,12 @@ defaults = {
 	'whole_line' : False
 }
 
+def loadconfig(filename, namespace):
+    with open(filename, 'rbU') as fd:
+        source = fd.read()
+    code = compile(source, filename, 'exec')
+    exec(code, namespace)
+
 def update_options(options):
 	conf_file = options.config
 	namespace = {}
@@ -22,13 +29,13 @@ def update_options(options):
 
 	if conf_file:
 		try:
-			execfile(conf_file, namespace)
+			loadconfig(conf_file, namespace)
 		except IOError:
-			print "Error: Could not open %s for reading; ignoring." % (conf_file)
+			print("Error: Could not open %s for reading; ignoring." % (conf_file))
 			use_config = False
 	else:
 		try:
-			execfile(defaults['config'], namespace)
+			loadconfig(defaults['config'], namespace)
 		except IOError:
 			use_config = False
 
@@ -37,7 +44,7 @@ def update_options(options):
 			raise ValueError('%s is not a valid config file (Does not have a dict named "config")' % (conf_file))
 		config.update(namespace['config'])
 
-	for (key, value) in config.items():
+	for (key, value) in list(config.items()):
 		if not getattr(options, key, None):
 			setattr(options, key, value)
 

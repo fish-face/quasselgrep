@@ -1,5 +1,9 @@
-import output
-from msgtypes import *
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import range
+from builtins import object
+from . import output
+from .msgtypes import *
 
 from time import time
 from datetime import datetime
@@ -10,7 +14,7 @@ maskre = re.compile('(?P<nick>.*)!(.*)@(.*)')
 MSG_NORMAL = 1
 MSG_ACTION = 4
 
-class Param:
+class Param(object):
 	"""Holds information about a parameter that can be searched on"""
 	def __init__(self, name, clause, morenames=[]):
 		self.names = [name] + morenames
@@ -66,7 +70,7 @@ class ContextGroup(object):
 		return self.got_post_rows >= self.ctxt
 
 
-class Query:
+class Query(object):
 	"""Represents a single query to the database"""
 
 	def __init__(self, cursor, options, text, timerange=None):
@@ -185,7 +189,7 @@ class Query:
 
 	def search_query(self, only_ids=False):
 		"""Normal query"""
-		params = self.filter_params(self.params.keys())
+		params = self.filter_params(list(self.params.keys()))
 		query = self.basequery(only_ids)
 		query.append(self.where_clause(params))
 
@@ -295,12 +299,12 @@ class Query:
 				self.execute_query(*self.search_query())
 			else:
 				query, params = self.search_query()
-				print query
-				print params
+				print(query)
+				print(params)
 				self.cursor.execute("EXPLAIN " + query, params)
 			results = self.cursor.fetchall()
 
-		print "Query completed in %.2f seconds" % (time() - start)
+		print("Query completed in %.2f seconds" % (time() - start))
 		return results
 
 	def execute_query(self, query, params=[]):
@@ -312,7 +316,7 @@ class Query:
 				thread.join(1)
 				if not thread.is_alive(): break
 		except KeyboardInterrupt:
-			print "Stopping."
+			print("Stopping.")
 			raise
 
 	def format(self, result):

@@ -1,13 +1,18 @@
-from SocketServer import ThreadingTCPServer, TCPServer, BaseRequestHandler
+from __future__ import print_function
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
+from socketserver import ThreadingTCPServer, TCPServer, BaseRequestHandler
 from shlex import split
 from os import urandom
 
-from util import getdata
+from .util import getdata
 
 class AuthException(Exception):
 	pass
 
-class Object:
+class Object(object):
 	pass
 
 class QuasselGrepHandler(BaseRequestHandler):
@@ -17,12 +22,12 @@ class QuasselGrepHandler(BaseRequestHandler):
 		request = getdata(socket)[0]
 
 		if request != 'HI':
-			socket.sendall('GO AWAY\n')
+			socket.sendall(b'GO AWAY\n')
 			socket.close()
 			return
 
 		salt = urandom(32).encode('hex')
-		socket.sendall('SALT=%s\n' % (salt))
+		socket.sendall(b'SALT=%s\n' % (salt))
 
 		option_list = []
 		while True:
@@ -59,19 +64,19 @@ class QuasselGrepHandler(BaseRequestHandler):
 
 		try:
 			query = program.run(options, search, salt)
-		except AuthException, e:
-			socket.sendall('Error: %s\n' % (e))
+		except AuthException as e:
+			socket.sendall(('Error: %s\n' % (e)).encode('utf-8'))
 			socket.close()
 			return
 
-		socket.sendall('Please wait for results...\n')
+		socket.sendall(b'Please wait for results...\n')
 		results = query.run()
 		if results:
 			for res in results:
-				socket.sendall(query.format(res) + '\n')
+				socket.sendall((query.format(res) + '\n').encode('utf-8'))
 			socket.close()
 		else:
-			socket.sendall('No results.\n')
+			socket.sendall(b'No results.\n')
 
 host = ''
 port = 9001
@@ -82,4 +87,4 @@ def start(program, options):
 	server.options = options
 
 	server.serve_forever()
-	print "Finishing."
+	print("Finishing.")

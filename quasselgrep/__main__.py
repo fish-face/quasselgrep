@@ -1,18 +1,23 @@
 #!/usr/bin/env python
 
-from db import Db
-from query import Query
-import dateparse
-from times import timespan
-import config
+from __future__ import print_function
+from __future__ import absolute_import
+
+from builtins import object, str
+from .db import Db
+from .query import Query
+from . import dateparse
+from .times import timespan
+from . import config
 
 import sys
 from datetime import datetime
-from optparse import OptionParser
-from optparse import IndentedHelpFormatter as Formatter
+from argparse import ArgumentParser as OptionParser
+from argparse import HelpFormatter as Formatter #IndentedHelpFormatter as Formatter
+from argparse import Namespace
 
-version = 'Quasselgrep 0.1\nCopyright (c) 2013 Chris Le Sueur\nThis program is licensed under the GNU General Public License'
-usage = '%prog [options] <keywords>'
+version = u'Quasselgrep 0.1\nCopyright (c) 2013 Chris Le Sueur\nThis program is licensed under the GNU General Public License'
+usage = u'%(prog)s [options] <keywords>'
 
 def format_option_strings(self, option):
 	"""Return a comma-separated list of option strings & metavariables."""
@@ -39,7 +44,7 @@ def format_option_strings(self, option):
 
 Formatter.format_option_strings = format_option_strings
 
-class QuasselGrep:
+class QuasselGrep(object):
 	def __init__(self):
 		self.setup_optparser()
 
@@ -50,15 +55,17 @@ class QuasselGrep:
 
 		results = query.run()
 		if query.options.debug:
-			for res in results: print res[0]
+			for res in results: print(res[0])
 		elif results:
-			for res in results: print query.format(res)
+			for res in results: print(query.format(res))
 		else:
-			print "No results found."
+			print("No results found.")
 
 	def setup_optparser(self):
 		"""Parse command line arguments using optarg"""
-		parser = OptionParser(version=version, usage=usage, formatter=Formatter())
+		parser = OptionParser(usage=usage, formatter_class=Formatter)
+		parser.add_option = parser.add_argument
+		parser.add_argument('--version', action='version', version=version)
 		parser.add_option('--db', dest='db_type', metavar='[postgres|sqlite]',
 						  help='Type of database')
 		parser.add_option('--dbname', dest='db_name', metavar='NAME',
@@ -101,12 +108,21 @@ class QuasselGrep:
 		parser.add_option('--debug', dest='debug', action='store_true',
 				help='Display information about the query instead of running it')
 
+		parser.add_argument('keywords', nargs='*', help='The text to search for')
+
 		self.parser = parser
 		self.all_options = []
 		self.valid_options = []
-		for option in parser.option_list:
+		for option in parser._actions:
 			if not option.dest:
 				continue
+
+			# In python 3 arguments are read in as unicode, but not in python 2. The following
+			# fixes all the above arguments which take in strings to decode them to unicode even
+			# in python 2.
+			if sys.version_info.major == 2 and (option.type == str or option.type == None):
+				option.type = self.arg_to_unicode
+
 			self.all_options.append(option.dest)
 
 			if option.dest[:2] == 'db':
@@ -114,35 +130,40 @@ class QuasselGrep:
 			if option.dest in ['hostname', 'config', 'server']:
 				continue
 			self.valid_options.append(option.dest)
+	
+	@staticmethod
+	def arg_to_unicode(string):
+		return string.decode(sys.stdin.encoding)
 
 	def parse_args(self, options=None):
-		return self.parser.parse_args(values=options)
+		args = self.parser.parse_args(namespace=options)
+		return args
 
 	def run(self, options=None, search='', salt=''):
 		"""Main function called from the commandline"""
 
 		#Set up command-line and configfile options
 		if options:
-			(options, args) = self.parse_args(options)
+			options = self.parse_args(options)
 		else:
-			(options, args) = self.parse_args()
+			options = self.parse_args()
 
 		try:
 			config.update_options(options)
-		except ValueError, e:
-			print "Error: Invalid option: %s" % (e)
+		except ValueError as e:
+			print("Error: Invalid option: %s" % (e))
 			return
 
-		if args:
-			search = ' '.join(args)
+		if options.keywords:
+			search = ' '.join(options.keywords)
 
 		#Be a client, or a server.
 		if options.hostname and not self.server:
-			import client
+			from . import client
 			client.start(options, search, self)
 			return
 		if options.server and not self.server:
-			import server
+			from . import server
 			self.server = True
 			server.start(self, options)
 			return
@@ -150,14 +171,14 @@ class QuasselGrep:
 		db = Db()
 		try:
 			cursor = db.connect(options)
-		except Exception, e:
-			print "Error connecting to database: %s" % (e)
+		except Exception as e:
+			print("Error connecting to database: %s" % (e))
 			return
 
 		#Users connecting to a server need to authenticate
 		if self.server:
-			import server
-			from util import salt_hash
+			from . import server
+			from .util import salt_hash
 			if not options.username or not options.password:
 				raise server.AuthException('You must specify a quassel username and password.')
 
@@ -182,10 +203,10 @@ class QuasselGrep:
 
 			if start:
 				timerange = [start, end]
-				print "Searching from %s to %s." % (start, end)
+				print("Searching from %s to %s." % (start, end))
 			else:
 				timerange = None
-				print "Error: Couldn't parse %s as a date/time." % (options.timerange)
+				print("Error: Couldn't parse %s as a date/time." % (options.timerange))
 				return
 		else:
 			timerange = None

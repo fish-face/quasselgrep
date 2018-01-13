@@ -24,25 +24,15 @@ REQUIREMENTS = [
 
 setup(
     name='quasselgrep',
-
     version='0.1',
-
     description='quasselgrep',
-
     long_description=long_description,
-
     author='Chris Le Sueur',
-
     author_email='',
-
     url='https://github.com/fish-face/quasselgrep',
-
     license="GPLv2",
-
     install_requires=REQUIREMENTS,
-
     keywords=['quassel', 'quasselgrep', 'irc', 'logs'],
-
     packages=find_packages(),
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers for others
@@ -54,6 +44,6 @@ setup(
 
     # Entry points; setuptools will generate scripts that invoke the listed functions.
     entry_points={
-        'console_scripts': ['quasselgrep = quasselgrep.quasselgrep:main']
+        'console_scripts': ['quasselgrep = quasselgrep.__main__:main']
     },
 )

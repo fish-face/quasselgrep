@@ -1,5 +1,6 @@
 
-class Db:
+from builtins import object
+class Db(object):
 	def __init__(self):
 		pass
 

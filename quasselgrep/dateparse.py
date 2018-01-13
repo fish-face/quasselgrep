@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 # Copyright 2013 Chris Le Sueur.
 # From dateparse.py, part of Whoosh, a python search library:
 
@@ -28,15 +30,16 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Matt Chaput.
 
+from builtins import object, str
 import re
 import sys
 from datetime import datetime, timedelta
 
 from dateutil.relativedelta import relativedelta
 rcompile = re.compile
-from times import adatetime, timespan
-from times import fill_in, is_void, relative_days
-from times import TimeError
+from .times import adatetime, timespan
+from .times import fill_in, is_void, relative_days
+from .times import TimeError
 
 
 class DateParseError(Exception):
@@ -73,7 +76,7 @@ class ParserBase(object):
 	"""
 
 	def to_parser(self, e):
-		if isinstance(e, basestring):
+		if isinstance(e, str):
 			return Regex(e)
 		else:
 			return e
@@ -453,7 +456,7 @@ class Regex(ParserBase):
 
 	def extract(self, match):
 		d = match.groupdict()
-		for key, value in d.iteritems():
+		for key, value in d.items():
 			try:
 				value = int(value)
 				d[key] = value
