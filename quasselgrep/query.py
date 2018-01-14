@@ -302,7 +302,7 @@ class Query(object):
 				print(query)
 				print(params)
 				self.cursor.execute("EXPLAIN " + query, params)
-			results = self.cursor.fetchall()
+			results = self.cursor
 
 		print("Query completed in %.2f seconds" % (time() - start))
 		return results
