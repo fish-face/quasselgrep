@@ -1,5 +1,13 @@
 from __future__ import print_function
 from __future__ import absolute_import
+
+from past.types import basestring
+
+try:
+	basestring
+except NameError:
+	basestring = str
+
 # Copyright 2013 Chris Le Sueur.
 # From dateparse.py, part of Whoosh, a python search library:
 
@@ -76,7 +84,7 @@ class ParserBase(object):
 	"""
 
 	def to_parser(self, e):
-		if isinstance(e, str):
+		if isinstance(e, basestring):
 			return Regex(e)
 		else:
 			return e
