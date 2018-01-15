@@ -238,14 +238,14 @@ class Query(object):
 
 		return ('\n'.join(query), [getattr(self,param) for param in params])
 
-	def sort_results_for_context(self, results):
+	def sort_results_for_context(self, cursor):
 		"""Sort context results for display"""
 		groups = []
 		group_for = {}
 		ctxt = self.options.context
 		ctxt_for_col = 7+ctxt*2
 		# Loop over rows and group according to which row they are context for
-		for row in results:
+		for row in cursor:
 			buff = row[5]
 			if buff in group_for and not group_for[buff].finished() and group_for[buff].matches_row(row):
 					group_for[buff].add_row(row)
@@ -282,19 +282,34 @@ class Query(object):
 
 		start = time()
 
-		#If the user wants context lines, things get complicated...
+		# If the user wants context lines, things get complicated...
 		if self.options.context:
-			#First find all "possible" ids of matching rows - so ignoring
-			#the search parameters apart from user, network, buffer and time.
-			self.execute_query(*self.search_query(only_ids=True))
+			# First find all "possible" ids of matching rows - so ignoring
+			# the search parameters apart from user, network, buffer and time.
+			query, params = self.search_query(only_ids=True)
+			if self.options.debug:
+				print("Getting IDs requiring context with:")
+				print(query)
+				print(params)
+			self.execute_query(query, params)
 			ids = [res[0] for res in self.cursor]
 			if ids:
-				self.execute_query(*self.context_query(ids))
-				results = self.sort_results_for_context(self.cursor.fetchall())
+				# Now if there was something returned, get the context for the returned rows.
+				query, params = self.context_query(ids)
+				if self.options.debug:
+					print("Getting context of IDs with:")
+					print(query)
+					print(params)
+					query = 'EXPLAIN ' + query
+				self.execute_query(query, params)
+				if self.options.debug:
+					results = self.cursor
+				else:
+					results = self.sort_results_for_context(self.cursor)
 			else:
 				results = []
 		else:
-			#Simple case
+			# Simple case
 			if not self.options.debug:
 				self.execute_query(*self.search_query())
 			else:

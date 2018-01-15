@@ -55,7 +55,9 @@ class QuasselGrep(object):
 
 		results = query.run()
 		if query.options.debug:
-			for res in results: print(res[0])
+			for res in results:
+				if res:
+					print(res[0])
 		elif results:
 			for res in results: print(query.format(res))
 		else:
