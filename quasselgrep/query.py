@@ -253,7 +253,7 @@ class Query(object):
 				self.cursor.execute("EXPLAIN " + query, params)
 
 		print("Query completed in %.2f seconds" % (time() - start))
-		return self.cursor
+		return self.formatter(self.cursor)
 
 	def execute_query(self, query, params=[]):
 		thread = Thread(target=self.cursor.execute, args=(query,params))
@@ -267,25 +267,30 @@ class Query(object):
 			print("Stopping.")
 			raise
 
-	def format(self, result):
-		"""Format a database row
+	def formatter(self, results):
+		"""Return formatted database rows
 
-		Take a list as returned from the database and format it like
+		Take an iterable of rows as returned from the database and format it like
 		a line from IRC."""
+		context = self.options.context
+		messageid = None
 
-		#Separator between contexts
-		if result is None:
-			return '---'
+		for result in results:
+			#Separator between contexts
+			if context and messageid and messageid != result[0]:
+				yield '---'
 
-		#Extract data we care about
-		time = result[1]
-		type = result[2]
-		message = result[3]
-		try:
-			sender = maskre.match(result[4]).group('nick')
-		except:
-			sender = result[4]
-		buffer = result[5] if not self.buffer else None
+			messageid = result[0]
 
-		return output.format(time, type, message, sender, buffer)
+			#Extract data we care about
+			time = result[1]
+			type = result[2]
+			message = result[3]
+			try:
+				sender = maskre.match(result[4]).group('nick')
+			except:
+				sender = result[4]
+			buffer = result[5] if not self.buffer else None
+
+			yield output.format(time, type, message, sender, buffer)
 

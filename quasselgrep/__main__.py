@@ -59,7 +59,7 @@ class QuasselGrep(object):
 				if res:
 					print(res[0])
 		elif results:
-			for res in results: print(query.format(res))
+			for res in results: print(res)
 		else:
 			print("No results found.")
 
