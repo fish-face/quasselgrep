@@ -27,51 +27,14 @@ class TypesParam(Param):
 		self.clause = 'backlog.type IN %s' % (msg_types,)
 
 
-class ContextGroup(object):
-	def __init__(self, row, ctxt_for_col, ctxt):
-		self.ctxt_for_col = ctxt_for_col
-		self.ctxt = ctxt
-
-		self.rows = [None]
-		self.buff = row[5]
-		self.first_for = row[ctxt_for_col]
-
-		self.got_pre_rows = -1
-		self.got_post_rows = 0
-		self.post = False
-
-		self.add_row(row)
-
-	def matches_row(self, row):
-		return row[5] == self.buff and row[self.ctxt_for_col] == self.ctxt_for
-
-	def add_row(self, row):
-		self.rows.append(row)
-		self.ctxt_for = row[self.ctxt_for_col]
-
-		# Track whether we have enough rows before and after
-		if self.post:
-			self.got_post_rows += 1
-		else:
-			self.got_pre_rows += 1
-
-		if row[0] == row[self.ctxt_for_col]:
-			self.got_post_rows = 0
-			self.post = True
-
-	def add_group(self, other):
-		self.rows += other.rows[1:]
-		other.rows = []
-
-	def pre_finished(self):
-		return self.got_pre_rows >= self.ctxt
-
-	def finished(self):
-		return self.got_post_rows >= self.ctxt
-
-
 class Query(object):
 	"""Represents a single query to the database"""
+	joins = [
+		"JOIN sender ON sender.senderid = backlog.senderid",
+		"JOIN buffer ON buffer.bufferid = backlog.bufferid",
+		"JOIN network ON network.networkid = buffer.networkid",
+		"JOIN quasseluser ON network.userid = quasseluser.userid"
+	]
 
 	def __init__(self, cursor, options, text, timerange=None):
 		self.cursor = cursor
@@ -156,34 +119,39 @@ class Query(object):
 	def contextbits(self):
 		if self.options.context:
 			ctxt = self.options.context
-			lags = ['       LAG(backlog.messageid, %d) OVER ctxt_window AS id_%d,' % (i, i) for i in range(1, ctxt+1)]
-			leads = ['       LEAD(backlog.messageid, %d) OVER ctxt_window AS id_%d,' % (i, ctxt+i) for i in range(1, ctxt+1)]
+			lags = ['       LAG(backlog.messageid, %d) OVER ctxt_window AS ctxt_id_%d,' % (i, i) for i in range(1, ctxt+1)]
+			leads = ['       LEAD(backlog.messageid, %d) OVER ctxt_window AS ctxt_id_%d,' % (i, ctxt+i) for i in range(1, ctxt+1)]
 			leads[-1] = leads[-1][:-1]
 			return lags + leads
 		else:
 			return ''
 
-	def basequery(self, only_ids=False):
+	def columns(self):
+		columns = []
+		if self.options.db_type == 'postgres':
+			columns.append('backlog.time::timestamp(0)')
+		elif self.options.db_type == 'sqlite':
+			columns.append("datetime(backlog.time, 'unixepoch')")
+		columns += ["backlog.type", "backlog.message", "sender.sender", "buffer.buffername", "network.networkname"]
+
+		return columns
+
+	def basequery(self, only_ids=False, context=False):
 		"""Common start to queries
 
 		If only_ids is specified, only request IDs, not full records."""
-		query = ["SELECT backlog.messageid, " + ('' if not only_ids else 'buffer.buffername ')]
+		query = ["SELECT backlog.messageid"]
+
+		columns = [''] + self.columns()
 
 		if not only_ids:
-			if self.options.db_type == 'postgres':
-				query.append("       backlog.time::timestamp(0),")
-			elif self.options.db_type == 'sqlite':
-				query.append("       datetime(backlog.time, 'unixepoch'),")
-			query += ["       backlog.type, backlog.message,",
-					  "       sender.sender, buffer.buffername, network.networkname"
-			 + (',' if self.options.context else '')]
+			query[0] = query[0] + ',\n       '.join(columns)
+
+		if context:
+			query[-1] += ','
 			query += self.contextbits()
 
-		query += ["FROM backlog",
-		          "JOIN sender ON sender.senderid = backlog.senderid",
-		          "JOIN buffer ON buffer.bufferid = backlog.bufferid",
-		          "JOIN network ON network.networkid = buffer.networkid",
-		          "JOIN quasseluser ON network.userid = quasseluser.userid"]
+		query += ["FROM backlog"] + self.joins
 
 		return query
 
@@ -214,65 +182,48 @@ class Query(object):
 
 		return ('\n'.join(query), [getattr(self,param) for param in params])
 
-	def context_query(self, ids):
+	def context_query(self):
 		params = self.filter_params(["user", "network", "buffer", "fromtime", "totime"])
-		query = self.basequery()
+		ctxt_query = self.basequery(only_ids=True, context=True)
+		central_id_query, all_params = self.search_query(only_ids=True)
+		central_id_query = central_id_query.replace('\n', '\n    ')
 
-		# Add a column which indicates which message id each row is context for
-		# This is kind of ugly and might be better done in python
-		context_for = '(CASE True WHEN messageid in %s THEN messageid ' + ' '.join(['WHEN id_%d in %%s THEN id_%d' % (i+1, i+1) for i in range(self.options.context*2)]) + ' END) as context_for'
-		formats = tuple([tuple(ids)] * ((self.options.context*2) + 1))
-		context_for = context_for % formats
+		# First set up two WITH queries. The first is getting the IDs of the results from the actual search;
+		# the second running a looser query (it ignores the message search part for example), getting not just
+		# matching IDs but IDs of the next/previous N rows that also match the loose query in the same buffer.
+		context_extra_queries = [
+			'WITH central_ids AS (',
+			'    ' + central_id_query + '),',
+			'context_ids AS (',
+			'    ' + '\n    '.join(ctxt_query),
+			'    ' + self.where_clause(params),
+			'    WINDOW ctxt_window AS (PARTITION BY backlog.bufferid ORDER BY backlog.time, backlog.messageid ASC)',
+			'    ORDER BY time'
+			')']
 
-		query.insert(0, 'SELECT *, %s FROM (' % context_for)
-		query.append(self.where_clause(params))
-		query += ["WINDOW ctxt_window AS (PARTITION BY backlog.bufferid ORDER BY backlog.time, backlog.messageid ASC)"]
-		query.append("ORDER BY backlog.time")
-		query.append(') x')
+		# Extract the IDs and annotate the rows with ctxt_for, the ID of the row which 'caused' that this one to match.
+		context_unions = [
+			['    UNION',
+			 '    SELECT ctxt_id_%d AS ctxt_for, messageid FROM context_ids' % (i),
+			 '    WHERE context_ids.ctxt_id_%d IN (SELECT * FROM central_ids)' % (i)]
+			for i in range(1, self.options.context*2 + 1)
+		]
 
-		ors = ['messageid IN %s' % (tuple(ids),)]
-		ors += ['id_%d IN %s' % (i+1, tuple(ids)) for i in range(self.options.context*2)]
+		columns = ['ctxt_for'] + self.columns()
 
-		query.append('WHERE (' + ' OR '.join(ors) + ')')
-		query.append('ORDER BY time, messageid')
+		# This is the *actual* query.
+		context_query = [
+			'SELECT ' + ', '.join(columns),
+			'FROM (',
+			'    SELECT messageid AS ctxt_for, messageid FROM context_ids',
+			'    WHERE context_ids.messageid IN (SELECT * FROM central_ids)']
+		context_query += [l for u in context_unions for l in u] + [
+			') context',
+			'JOIN backlog ON context.messageid = backlog.messageid'] + self.joins
+		context_query += ['ORDER BY ctxt_for, time']
 
-		return ('\n'.join(query), [getattr(self,param) for param in params])
+		return ('\n'.join(context_extra_queries + context_query), all_params + [getattr(self,param) for param in params])
 
-	def sort_results_for_context(self, cursor):
-		"""Sort context results for display"""
-		groups = []
-		group_for = {}
-		ctxt = self.options.context
-		ctxt_for_col = 7+ctxt*2
-		# Loop over rows and group according to which row they are context for
-		for row in cursor:
-			buff = row[5]
-			if buff in group_for and not group_for[buff].finished() and group_for[buff].matches_row(row):
-					group_for[buff].add_row(row)
-			else:
-				groups.append(ContextGroup(row, ctxt_for_col, ctxt))
-				group_for[buff] = groups[-1]
-
-		# Some groups may have not enough context before the matching line; merge
-		# them with a previous group
-		for i, g in enumerate(groups[:-1]):
-			if not g.rows:
-				# Group already got squashed
-				continue
-			for h in groups[i+1:]:
-				if h.buff != g.buff:
-					continue
-				if not h.pre_finished():
-					# Needs more context; do merge
-					g.add_group(h)
-				else:
-					# Don't try and merge further groups with this one
-					break
-
-		# Sort the groups according to the first row of the group which matched
-		# the actual query
-		groups.sort(key=lambda x:x.first_for)
-		return (row for g in groups for row in g.rows)
 
 	def run(self):
 		"""Run a database query according to options
@@ -282,32 +233,15 @@ class Query(object):
 
 		start = time()
 
-		# If the user wants context lines, things get complicated...
+		# If the user wants context lines we have to use a different query
 		if self.options.context:
-			# First find all "possible" ids of matching rows - so ignoring
-			# the search parameters apart from user, network, buffer and time.
-			query, params = self.search_query(only_ids=True)
+			query, params = self.context_query()
 			if self.options.debug:
-				print("Getting IDs requiring context with:")
+				print("Getting context of IDs with:")
 				print(query)
 				print(params)
+				query = 'EXPLAIN ' + query
 			self.execute_query(query, params)
-			ids = [res[0] for res in self.cursor]
-			if ids:
-				# Now if there was something returned, get the context for the returned rows.
-				query, params = self.context_query(ids)
-				if self.options.debug:
-					print("Getting context of IDs with:")
-					print(query)
-					print(params)
-					query = 'EXPLAIN ' + query
-				self.execute_query(query, params)
-				if self.options.debug:
-					results = self.cursor
-				else:
-					results = self.sort_results_for_context(self.cursor)
-			else:
-				results = []
 		else:
 			# Simple case
 			if not self.options.debug:
@@ -317,10 +251,9 @@ class Query(object):
 				print(query)
 				print(params)
 				self.cursor.execute("EXPLAIN " + query, params)
-			results = self.cursor
 
 		print("Query completed in %.2f seconds" % (time() - start))
-		return results
+		return self.cursor
 
 	def execute_query(self, query, params=[]):
 		thread = Thread(target=self.cursor.execute, args=(query,params))
