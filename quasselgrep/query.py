@@ -209,7 +209,7 @@ class Query(object):
 			for i in range(1, self.options.context*2 + 1)
 		]
 
-		columns = ['ctxt_for'] + self.columns()
+		columns = ['backlog.messageid'] + self.columns() + ['context.ctxt_for']
 
 		# This is the *actual* query.
 		context_query = [
@@ -268,19 +268,32 @@ class Query(object):
 			raise
 
 	def formatter(self, results):
-		"""Return formatted database rows
+		"""Iterable returning formatted database rows
 
-		Take an iterable of rows as returned from the database and format it like
-		a line from IRC."""
+		Take an iterable of rows as returned from the database and format them like a line from IRC."""
 		context = self.options.context
-		messageid = None
+		ctxt_for = None
+		messageid_history = []
 
 		for result in results:
-			#Separator between contexts
-			if context and messageid and messageid != result[0]:
-				yield '---'
+			# Special handling for output of context
+			if context:
+				messageid = result[0]
 
-			messageid = result[0]
+				# There may be duplicate rows where the context of one message is also context of another. So if we see
+				# the same msg id, skip it.
+				if messageid in messageid_history:
+					ctxt_for = result[7]
+					continue
+				# When ctxt_for changes we are changing context groups: print a separator. At this point we also clear
+				# the history of ids. It could be that the previous group was from buffer A, we are now printing a
+				# group from buffer B and we will see duplicate rows from buffer A again - but we still want to print
+				# them because there was stuff in the way, so erasing the history is fine.
+				if ctxt_for and ctxt_for != result[7]:
+					messageid_history = []
+					yield '---'
+				messageid_history.append(messageid)
+				ctxt_for = result[7]
 
 			#Extract data we care about
 			time = result[1]
