@@ -28,9 +28,11 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Matt Chaput.
 
+from __future__ import absolute_import
 import calendar
 import copy
 from datetime import date, datetime, timedelta
+import six
 
 
 class TimeError(Exception):
@@ -170,7 +172,7 @@ class adatetime(object):
 		"""
 
 		newadatetime = self.copy()
-		for key, value in kwargs.iteritems():
+		for key, value in six.iteritems(kwargs):
 			if key in self.units:
 				setattr(newadatetime, key, value)
 			else:

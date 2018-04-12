@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+from __future__ import print_function
 import os
 
 defaults = {
@@ -22,13 +24,13 @@ def update_options(options):
 
 	if conf_file:
 		try:
-			execfile(conf_file, namespace)
+			exec(compile(open(conf_file).read(), conf_file, 'exec'), namespace)
 		except IOError:
-			print "Error: Could not open %s for reading; ignoring." % (conf_file)
+			print("Error: Could not open %s for reading; ignoring." % (conf_file))
 			use_config = False
 	else:
 		try:
-			execfile(defaults['config'], namespace)
+			exec(compile(open(defaults['config']).read(), defaults['config'], 'exec'), namespace)
 		except IOError:
 			use_config = False
 

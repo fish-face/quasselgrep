@@ -28,15 +28,18 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Matt Chaput.
 
+from __future__ import absolute_import
+from __future__ import print_function
 import re
 import sys
 from datetime import datetime, timedelta
 
 from dateutil.relativedelta import relativedelta
+import six
 rcompile = re.compile
-from times import adatetime, timespan
-from times import fill_in, is_void, relative_days
-from times import TimeError
+from .times import adatetime, timespan
+from .times import fill_in, is_void, relative_days
+from .times import TimeError
 
 
 class DateParseError(Exception):
@@ -47,7 +50,7 @@ class DateParseError(Exception):
 
 def print_debug(level, msg, *args):
 	if level > 0:
-		print(("  " * (level - 1)) + (msg % args))
+		print((("  " * (level - 1)) + (msg % args)))
 
 
 # Parser element objects
@@ -73,7 +76,7 @@ class ParserBase(object):
 	"""
 
 	def to_parser(self, e):
-		if isinstance(e, basestring):
+		if isinstance(e, six.string_types):
 			return Regex(e)
 		else:
 			return e
@@ -453,7 +456,7 @@ class Regex(ParserBase):
 
 	def extract(self, match):
 		d = match.groupdict()
-		for key, value in d.iteritems():
+		for key, value in six.iteritems(d):
 			try:
 				value = int(value)
 				d[key] = value

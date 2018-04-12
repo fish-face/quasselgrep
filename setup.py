@@ -1,5 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
+from __future__ import absolute_import
 import os
 from setuptools import setup, find_packages
 
@@ -20,6 +21,7 @@ except ImportError:
 REQUIREMENTS = [
     'python-dateutil',
     'pycrypto',
+    'six'
 ]
 
 setup(
@@ -45,10 +47,11 @@ setup(
 
     packages=find_packages(),
 
-    # See https://pypi.python.org/pypi?%3Aaction=list_classifiers for others
+    # See https://pypi.python3.org/pypi?%3Aaction=list_classifiers for others
     classifiers=[
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.6',
         'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
     ],
 

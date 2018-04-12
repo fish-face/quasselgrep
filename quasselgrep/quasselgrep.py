@@ -1,10 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-from db import Db
-from query import Query
-import dateparse
-from times import timespan
-import config
+from __future__ import absolute_import
+from __future__ import print_function
+from .db import Db
+from .query import Query
+from . import dateparse
+from .times import timespan
+from . import config
 
 import sys
 from datetime import datetime
@@ -50,11 +52,11 @@ class QuasselGrep:
 
 		results = query.run()
 		if query.options.debug:
-			for res in results: print res[0]
+			for res in results: print(res[0])
 		elif results:
-			for res in results: print query.format(res)
+			for res in results: print(query.format(res))
 		else:
-			print "No results found."
+			print("No results found.")
 
 	def setup_optparser(self):
 		"""Parse command line arguments using optarg"""
@@ -129,8 +131,8 @@ class QuasselGrep:
 
 		try:
 			config.update_options(options)
-		except ValueError, e:
-			print "Error: Invalid option: %s" % (e)
+		except ValueError as e:
+			print("Error: Invalid option: %s" % (e))
 			return
 
 		if args:
@@ -138,11 +140,11 @@ class QuasselGrep:
 
 		#Be a client, or a server.
 		if options.hostname and not self.server:
-			import client
+			from . import client
 			client.start(options, search, self)
 			return
 		if options.server and not self.server:
-			import server
+			from . import server
 			self.server = True
 			server.start(self, options)
 			return
@@ -150,14 +152,14 @@ class QuasselGrep:
 		db = Db()
 		try:
 			cursor = db.connect(options)
-		except Exception, e:
-			print "Error connecting to database: %s" % (e)
+		except Exception as e:
+			print("Error connecting to database: %s" % (e))
 			return
 
 		#Users connecting to a server need to authenticate
 		if self.server:
-			import server
-			from util import salt_hash
+			from . import server
+			from .util import salt_hash
 			if not options.username or not options.password:
 				raise server.AuthException('You must specify a quassel username and password.')
 
@@ -182,10 +184,10 @@ class QuasselGrep:
 
 			if start:
 				timerange = [start, end]
-				print "Searching from %s to %s." % (start, end)
+				print("Searching from %s to %s." % (start, end))
 			else:
 				timerange = None
-				print "Error: Couldn't parse %s as a date/time." % (options.timerange)
+				print("Error: Couldn't parse %s as a date/time." % (options.timerange))
 				return
 		else:
 			timerange = None
