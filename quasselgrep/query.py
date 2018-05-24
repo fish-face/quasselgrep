@@ -13,6 +13,10 @@ from threading import Thread
 maskre = re.compile('(?P<nick>.*)!(.*)@(.*)')
 MSG_NORMAL = 1
 MSG_ACTION = 4
+ORDER = {
+	True: 'DESC',
+	False: 'ASC'
+}
 
 class Param(object):
 	"""Holds information about a parameter that can be searched on"""
@@ -67,6 +71,8 @@ class Query(object):
 			self.limit = int(options.limit)
 		else:
 			self.limit = 0
+
+		self.order = ORDER[options.reverse]
 
 		#TODO Consider changing this to equality for buffer
 		self.params = {
@@ -163,12 +169,12 @@ class Query(object):
 
 		if self.limit:
 			query.insert(0,"SELECT * FROM (")
-			query.append("ORDER BY backlog.time DESC")
+			query.append("ORDER BY backlog.time %s" % (ORDER[not self.options.reverse]))
 			query.append("LIMIT %s) AS query")
-			query.append("ORDER BY query.time")
+			query.append("ORDER BY query.time %s" % self.order)
 			params.append("limit")
 		else:
-			query.append("ORDER BY backlog.time")
+			query.append("ORDER BY backlog.time %s" % (self.order))
 		#print '\n'.join(query)
 		return ('\n'.join(query), [getattr(self,param) for param in params])
 
@@ -178,7 +184,7 @@ class Query(object):
 		query = self.basequery(only_ids=True)
 		query.append(self.where_clause(params))
 
-		query.append("ORDER BY backlog.time")
+		query.append("ORDER BY backlog.time %" % (self.order))
 
 		return ('\n'.join(query), [getattr(self,param) for param in params])
 
@@ -220,7 +226,7 @@ class Query(object):
 		context_query += [l for u in context_unions for l in u] + [
 			') context',
 			'JOIN backlog ON context.messageid = backlog.messageid'] + self.joins
-		context_query += ['ORDER BY ctxt_for, time']
+		context_query += ['ORDER BY ctxt_for %s, time' % (self.order)]
 
 		return ('\n'.join(context_extra_queries + context_query), all_params + [getattr(self,param) for param in params])
 

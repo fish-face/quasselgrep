@@ -97,6 +97,8 @@ class QuasselGrep(object):
 		              help='Also search for joins, parts, etc.')
 		parser.add_option('-L', '--limit', dest='limit', metavar='NUM',
 		              help='Return at most NUM results')
+		parser.add_option('-r', '--reverse', dest='reverse', action='store_true',
+		              help='Reverse the order of returned results')
 
 		parser.add_option('--server', dest='server', action='store_true')
 		parser.add_option('-H', '--host', dest='hostname', help='Connect to quasselgrep server at HOSTNAME')
