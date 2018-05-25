@@ -69,48 +69,48 @@ class QuasselGrep(object):
 		parser.add_option = parser.add_argument
 		parser.add_argument('--version', action='version', version=version)
 		parser.add_option('--db', dest='db_type', metavar='[postgres|sqlite]',
-						  help='Type of database')
+		                  help='Type of database')
 		parser.add_option('--dbname', dest='db_name', metavar='NAME',
-						  help='Specify the database file or name.')
+		                  help='Specify the database file or name.')
 		parser.add_option('--dbuser', dest='db_user', metavar='DATABASE',
-						  help='PostGres user')
+		                  help='PostGres user')
 		parser.add_option('--dbpassword', dest='db_password', metavar='DATABASE',
-						  help='PostGres password')
+		                  help='PostGres password')
 		parser.add_option('--dbhost', dest='db_host', metavar='HOST',
-						  help='Hostname of PostGres server')
+		                  help='Hostname of PostGres server')
 		parser.add_option('--dbport', dest='db_port', metavar='PORT',
-						  help='Port of PostGres server')
+		                  help='Port of PostGres server')
 
 		parser.add_option('-c', '--configfile', dest='config', metavar='FILE',
-				help='Location of config file')
+		                  help='Location of config file')
 		parser.add_option('-u', '--username', dest='username', metavar='USER',
-					  help='Specify the quassel username.')
+		                  help='Specify the quassel username.')
 		parser.add_option('-N', '--network', dest='network', metavar='NETWORK',
-					  help='Specify the network to search.')
+		                  help='Specify the network to search.')
 		parser.add_option('-b', '--buffer', dest='buffer', metavar='BUFFER',
-					  help='Specify the Quassel buffer (query nick or #channel) to search')
+		                  help='Specify the Quassel buffer (query nick or #channel) to search')
 		parser.add_option('-n', '--nick', dest='sender', metavar='NICK',
-					  help='Specify the nickname to search for')
+		                  help='Specify the nickname to search for')
 		parser.add_option('-t', '--time', dest='timerange', metavar='RANGE',
-					  help='Time range. See README for details.')
+		                  help='Time range. See README for details.')
 		parser.add_option('-i', '--inclusive', dest='inclusive', action='store_true',
-		              help='Also search for joins, parts, etc.')
+		                  help='Also search for joins, parts, etc.')
 		parser.add_option('-L', '--limit', dest='limit', metavar='NUM',
-		              help='Return at most NUM results')
+		                  help='Return at most NUM results')
 		parser.add_option('-r', '--reverse', dest='reverse', action='store_true',
-		              help='Reverse the order of returned results')
+		                  help='Reverse the order of returned results')
 
 		parser.add_option('--server', dest='server', action='store_true')
 		parser.add_option('-H', '--host', dest='hostname', help='Connect to quasselgrep server at HOSTNAME')
 		parser.add_option('-p', '--password', dest='password', help='Password your quassel username')
 
 		parser.add_option('-l', dest='whole_line', action='store_true',
-				help='Return only results whose message matches the entire search string')
+		                  help='Return only results whose message matches the entire search string')
 		parser.add_option('-C', '--context', dest='context', metavar='LINES',
-						  help='Include this many lines of context with results.')
+		                  help='Include this many lines of context with results.')
 
 		parser.add_option('--debug', dest='debug', action='store_true',
-				help='Display information about the query instead of running it')
+		                  help='Display information about the query instead of running it')
 
 		parser.add_argument('keywords', nargs='*', help='The text to search for')
 
