@@ -131,7 +131,7 @@ class Query(object):
 		if self.options.db_type == 'postgres':
 			columns.append('backlog.time::timestamp(0)')
 		elif self.options.db_type == 'sqlite':
-			columns.append("datetime(backlog.time, 'unixepoch')")
+			columns.append("datetime(backlog.time, 'unixepoch') as time")
 		columns += ["backlog.type", "backlog.message", "sender.sender", "buffer.buffername", "network.networkname"]
 
 		return columns
@@ -164,7 +164,7 @@ class Query(object):
 		if self.limit:
 			query.insert(0,"SELECT * FROM (")
 			query.append("ORDER BY backlog.time DESC")
-			query.append("LIMIT %s) AS query")
+			query.append("LIMIT ?) AS query")
 			query.append("ORDER BY query.time")
 			params.append("limit")
 		else:
