@@ -164,7 +164,7 @@ class Query(object):
 		if self.limit:
 			query.insert(0,"SELECT * FROM (")
 			query.append("ORDER BY backlog.time DESC")
-			query.append("LIMIT ?) AS query")
+			query.append("LIMIT %s) AS query" % (self.options.param_string))
 			query.append("ORDER BY query.time")
 			params.append("limit")
 		else:
