@@ -144,6 +144,7 @@ class Sequence(MultiBase):
 		self.progressive = progressive
 
 	def parse(self, text, dt, pos=0, debug=-9999):
+		old_pos = pos
 		d = adatetime()
 		first = True
 		foundall = False
@@ -157,6 +158,7 @@ class Sequence(MultiBase):
 				print_debug(debug, "Seq %s looking for sep", self.name)
 				m = self.sep_expr.match(text, pos)
 				if m:
+					old_pos = pos
 					pos = m.end()
 				else:
 					print_debug(debug, "Seq %s didn't find sep", self.name)
@@ -174,6 +176,7 @@ class Sequence(MultiBase):
 			if not at:
 				break
 			pos = newpos
+			old_pos = pos
 
 			print_debug(debug, "Seq %s adding=%r to=%r", self.name, at, d)
 			try:
@@ -188,8 +191,12 @@ class Sequence(MultiBase):
 		else:
 			foundall = True
 
+		if not foundall:
+			print_debug(debug, "Seq %s returning to stored position", self.name)
+			pos = old_pos
+
 		if not failed and (foundall or (not first and self.progressive)):
-			print_debug(debug, "Seq %s final=%r", self.name, d)
+			print_debug(debug, "Seq %s final=%r remaining='%s'", self.name, d, text[pos:])
 			return (d, pos)
 		else:
 			print_debug(debug, "Seq %s failed", self.name)
