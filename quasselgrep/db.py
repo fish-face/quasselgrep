@@ -13,6 +13,7 @@ class Db(object):
 				raise ValueError('Cannot open an sqlite database without sqlite3 python module')
 
 			self.connection = dbmodule.connect(options.db_name, check_same_thread=False)
+			cursor = self.connection.cursor()
 		elif options.db_type == 'postgres':
 			options.param_string = '%s'
 			try:
@@ -28,8 +29,8 @@ class Db(object):
 				self.connection.set_session(readonly=True)
 			except AttributeError:
 				pass
+			cursor = self.connection.cursor(name='quasselgrep')
 		else:
 			raise ValueError('Invalid database type: %s' % (options.db_type))
 
-		cursor = self.connection.cursor()
 		return cursor
