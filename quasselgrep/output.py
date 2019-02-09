@@ -40,8 +40,12 @@ def quit_parser(message, sender):
 	return '<-- %s has quit (%s)' % (sender, message)
 
 def kick_parser(message, sender):
-	target, message = message.split(' ', 1)
-	return '-!- %s has kicked %s (%s)' % (sender, target, message)
+	try:
+		target, message = message.split(' ', 1)
+	except ValueError:
+		return '-!- %s has kicked %s' % (sender, message)
+	else:
+		return '-!- %s has kicked %s (%s)' % (sender, target, message)
 
 def topic_parser(message, sender):
 	return '-!- %s' % (message)
