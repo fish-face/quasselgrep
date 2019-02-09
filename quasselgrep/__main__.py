@@ -93,6 +93,8 @@ class QuasselGrep(object):
 					  help='Specify the nickname to search for')
 		parser.add_option('-t', '--time', dest='timerange', metavar='RANGE',
 					  help='Time range. See README for details.')
+		parser.add_option('-I', '--ignorecase', dest='ignorecase', action='store_true',
+        			  help='Ignore case')
 		parser.add_option('-i', '--inclusive', dest='inclusive', action='store_true',
 		              help='Also search for joins, parts, etc.')
 		parser.add_option('-L', '--limit', dest='limit', metavar='NUM',
