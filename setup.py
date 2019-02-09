@@ -19,7 +19,7 @@ except ImportError:
 # Dependencies for the package, once installed.
 REQUIREMENTS = [
     'python-dateutil',
-    'pycrypto',
+    'pycryptodome',
 ]
 
 setup(
