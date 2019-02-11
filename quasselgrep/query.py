@@ -69,18 +69,23 @@ class Query(object):
 			self.limit = 0
 
 		#TODO Consider changing this to equality for buffer
+		if options.ignorecase:
+			textParam = Param('text', 'LOWER(backlog.message) LIKE LOWER(%(param)s)')
+		else:
+			textParam = Param('text', 'backlog.message LIKE %(param)s')
+
 		self.params = {
-			'text' : Param('text', 'backlog.message LIKE %(param)s'),
-			'user' : Param('user', 'quasseluser.username = %(param)s'),
-			'network' : Param('network', 'network.networkname LIKE %(param)s'),
-			'buffer' : Param('buffer', 'buffer.buffername LIKE %(param)s'),
-			'sender' : Param('sender', '(sender.sender = %(param)s OR sender.sender LIKE %(param)s)', ['sender_pattern']),
-			'fromtime' : Param('fromtime', 'backlog.time > %(param)s'),
-			'totime' : Param('totime', 'backlog.time < %(param)s'),
-			# SQLite can't handle tuple parameters, and they're not from user
-			# input so just include them directly in the string
-			'msg_types' : TypesParam(self.msg_types),
-		}
+				'text' : textParam,
+				'user' : Param('user', 'quasseluser.username = %(param)s'),
+				'network' : Param('network', 'network.networkname LIKE %(param)s'),
+				'buffer' : Param('buffer', 'buffer.buffername LIKE %(param)s'),
+				'sender' : Param('sender', '(sender.sender = %(param)s OR sender.sender LIKE %(param)s)', ['sender_pattern']),
+				'fromtime' : Param('fromtime', 'backlog.time > %(param)s'),
+				'totime' : Param('totime', 'backlog.time < %(param)s'),
+				# SQLite can't handle tuple parameters, and they're not from user
+				# input so just include them directly in the string
+				'msg_types' : TypesParam(self.msg_types),
+			}
 
 	#def get_senders(self, sender):
 	#	"""Find matching user ids"""
