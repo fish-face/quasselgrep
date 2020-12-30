@@ -14,6 +14,13 @@ class Db(object):
 
 			self.connection = dbmodule.connect(options.db_name, check_same_thread=False)
 			cursor = self.connection.cursor()
+
+			#Newer sqlite versions have timestamps in milliseconds.
+			cursor.execute('SELECT value FROM coreinfo WHERE key="schemaversion"')
+			results = cursor.fetchall()
+			if len(results) != 1:
+				raise ValueError('Incorrect sqlite schemaversion format')
+			options.sqlite_version = results[0][0]
 		elif options.db_type == 'postgres':
 			options.param_string = '%s'
 			try:
