@@ -11,7 +11,8 @@ defaults = {
 	'db_port' : 5432,
 	'db_password' : None,
 
-	'whole_line' : False
+	'whole_line' : False,
+	'datetime_format' : '%Y-%m-%d %H:%M:%S'
 }
 
 def loadconfig(filename, namespace):
