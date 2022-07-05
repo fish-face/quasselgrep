@@ -58,6 +58,8 @@ class Query(object):
 				self.fromtime = timerange[0].strftime('%s')
 				self.totime = timerange[1].strftime('%s')
 
+		self.datetime_format = options.datetime_format
+
 		if options.inclusive:
 			self.msg_types = (MSG, NOTICE, ACTION, NICK, MODE, JOIN, PART, QUIT, KICK, TOPIC, INVITE, SPLITJOIN, SPLITQUIT)
 		else:
@@ -134,7 +136,7 @@ class Query(object):
 	def columns(self):
 		columns = []
 		if self.options.db_type == 'postgres':
-			columns.append('backlog.time::timestamp(0)')
+			columns.append('backlog.time::timestamp(6)')
 		elif self.options.db_type == 'sqlite':
 			columns.append("datetime(backlog.time, 'unixepoch') as time")
 		columns += ["backlog.type", "backlog.message", "sender.sender", "buffer.buffername", "network.networkname"]
@@ -310,5 +312,5 @@ class Query(object):
 				sender = result[4]
 			buffer = result[5] if not self.buffer else None
 
-			yield output.format(time, type, message, sender, buffer)
+			yield output.format(self.datetime_format, time, type, message, sender, buffer)
 

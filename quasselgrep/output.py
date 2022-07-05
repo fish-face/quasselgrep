@@ -3,12 +3,12 @@ from .msgtypes import *
 
 BUF_COL_WIDTH = 16
 
-def format(time, msg_type, message, sender, buffer):
+def format(datetime_format, time, msg_type, message, sender, buffer):
 	formatted = ''
 	if buffer:
 		formatted += '(%s)' % (buffer)
 		formatted += ' ' * max(0,(BUF_COL_WIDTH - len(formatted)))
-	formatted += '[%s] ' % time
+	formatted += '[%s] ' % time.strftime(datetime_format)
 
 	try:
 		return formatted + parser_for_msgtype[msg_type](message, sender)

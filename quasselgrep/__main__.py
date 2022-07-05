@@ -109,6 +109,9 @@ class QuasselGrep(object):
 		parser.add_option('-C', '--context', dest='context', metavar='LINES',
 						  help='Include this many lines of context with results.')
 
+		parser.add_option('--datetime-format', dest='datetime_format', metavar='STRFTIME',
+				help='Specify the date/time format string for results (see Python strftime)')
+
 		parser.add_option('--debug', dest='debug', action='store_true',
 				help='Display information about the query instead of running it')
 
