@@ -1,5 +1,3 @@
-from future import standard_library
-standard_library.install_aliases()
 from builtins import object
 from socketserver import ThreadingTCPServer, TCPServer, BaseRequestHandler
 from shlex import split
