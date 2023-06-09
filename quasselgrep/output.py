@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 from .msgtypes import *
 
 BUF_COL_WIDTH = 16
