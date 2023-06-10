@@ -3,6 +3,9 @@ quasselgrep
 
 Tool for searching quassel logs from the commandline
 
+[![Packaging status](https://repology.org/badge/tiny-repos/quasselgrep.svg)](https://repology.org/project/quasselgrep/versions)
+[Gentoo overlay](https://github.com/jjakob/gentoo-overlay/net-irc/quasselgrep)
+
 Requirements
 ---
 
