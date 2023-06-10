@@ -36,6 +36,10 @@ setup(
     keywords=['quassel', 'quasselgrep', 'irc', 'logs'],
     packages=find_packages(),
 
+    extras_require = {
+        "PostgreSQL": ["psycopg2"],
+    },
+
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers for others
     classifiers=[
         'Programming Language :: Python',
