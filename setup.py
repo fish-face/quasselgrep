@@ -24,7 +24,7 @@ REQUIREMENTS = [
 
 setup(
     name='quasselgrep',
-    version='0.1',
+    version='0.2',
     description='quasselgrep',
     long_description=long_description,
     author='Chris Le Sueur',
