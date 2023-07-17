@@ -1,10 +1,3 @@
-from past.types import basestring
-
-try:
-	basestring
-except NameError:
-	basestring = str
-
 # Copyright 2013 Chris Le Sueur.
 # From dateparse.py, part of Whoosh, a python search library:
 
@@ -80,7 +73,7 @@ class ParserBase(object):
 	"""
 
 	def to_parser(self, e):
-		if isinstance(e, basestring):
+		if isinstance(e, str):
 			return Regex(e)
 		else:
 			return e
