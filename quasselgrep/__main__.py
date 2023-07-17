@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from builtins import object, str
 from .db import Db
 from .query import Query
 from . import dateparse

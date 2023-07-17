@@ -1,4 +1,3 @@
-from builtins import str
 import sys
 import socket
 from argparse import _StoreFalseAction, _StoreTrueAction

@@ -35,7 +35,6 @@ except NameError:
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Matt Chaput.
 
-from builtins import object, str
 import re
 import sys
 from datetime import datetime, timedelta

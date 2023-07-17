@@ -1,4 +1,3 @@
-from builtins import object
 from socketserver import ThreadingTCPServer, TCPServer, BaseRequestHandler
 from shlex import split
 from os import urandom
