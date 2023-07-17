@@ -13,7 +13,7 @@ Mandatory:
 - python-dateutil
 
 Optional:
-- python-crypto (to run as client/server)
+- pycryptodome (to run as client/server)
 - psycopg2 (for PostgreSQL support)
 
 Installation
