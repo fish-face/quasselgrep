@@ -1,3 +1,4 @@
+# Copyright 2023 Jernej Jakob <jernej.jakob@gmail.com>: Removed Python 2 compatibility
 # Copyright 2013 Chris Le Sueur.
 # From dateparse.py, part of Whoosh, a python search library:
 
