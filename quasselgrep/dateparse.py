@@ -1,13 +1,4 @@
-from __future__ import print_function
-from __future__ import absolute_import
-
-from past.types import basestring
-
-try:
-	basestring
-except NameError:
-	basestring = str
-
+# Copyright 2023 Jernej Jakob <jernej.jakob@gmail.com>: Removed Python 2 compatibility
 # Copyright 2013 Chris Le Sueur.
 # From dateparse.py, part of Whoosh, a python search library:
 
@@ -38,7 +29,6 @@ except NameError:
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Matt Chaput.
 
-from builtins import object, str
 import re
 import sys
 from datetime import datetime, timedelta
@@ -84,7 +74,7 @@ class ParserBase(object):
 	"""
 
 	def to_parser(self, e):
-		if isinstance(e, basestring):
+		if isinstance(e, str):
 			return Regex(e)
 		else:
 			return e

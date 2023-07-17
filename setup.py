@@ -24,21 +24,31 @@ REQUIREMENTS = [
 
 setup(
     name='quasselgrep',
-    version='0.1',
+    version='0.2',
     description='quasselgrep',
     long_description=long_description,
     author='Chris Le Sueur',
     author_email='',
     url='https://github.com/fish-face/quasselgrep',
     license="GPLv2",
+    python_requires=">=3.7",
     install_requires=REQUIREMENTS,
     keywords=['quassel', 'quasselgrep', 'irc', 'logs'],
     packages=find_packages(),
 
+    extras_require = {
+        "PostgreSQL": ["psycopg2"],
+    },
+
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers for others
     classifiers=[
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
         'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
     ],
 

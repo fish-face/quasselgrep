@@ -3,26 +3,29 @@ quasselgrep
 
 Tool for searching quassel logs from the commandline
 
+[![Packaging status](https://repology.org/badge/tiny-repos/quasselgrep.svg)](https://repology.org/project/quasselgrep/versions)
+[Gentoo overlay](https://github.com/jjakob/gentoo-overlay/net-irc/quasselgrep)
+
 Requirements
 ---
 
-The python dateutil library is a requirement, and can be installed with pip:
+Mandatory:
+- python-dateutil
 
-	# pip install python-dateutil
-
-To run quasselgrep as a server or client, you'll need python's crypto module.
-For instance, on Debian-based systems, run:
-
-	# apt-get install python-crypto
+Optional:
+- pycryptodome (to run as client/server)
+- psycopg2 (for PostgreSQL support)
 
 Installation
 ---
 
-You don't need to install quasselgrep to use it but it might be more convenient. To do so run:
+You don't need to install quasselgrep to use it but it might be more convenient. Install it via your system's package manager.
+
+If a package is not available for your OS, you can install it with pip:
 
 	# sudo pip install .
 
-from the root directory. You can also install it as a local user, or by directly running setup.py, of course. Having done this you will be able to run the `quasselgrep` command at the shell. If you don't install it like this, either use:
+from the root directory. You can also install it as a local user or in a virtualenv or by directly running setup.py. Having done this you will be able to run the `quasselgrep` command at the shell. If you don't install it like this, either use:
 
 	$ ./launch.py <options>
 

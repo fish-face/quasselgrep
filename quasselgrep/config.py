@@ -1,4 +1,3 @@
-from __future__ import print_function
 import os
 
 defaults = {
@@ -15,7 +14,7 @@ defaults = {
 }
 
 def loadconfig(filename, namespace):
-    with open(filename, 'rbU') as fd:
+    with open(filename, 'rb') as fd:
         source = fd.read()
     code = compile(source, filename, 'exec')
     exec(code, namespace)

@@ -1,9 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-from __future__ import absolute_import
-
-from builtins import object, str
 from .db import Db
 from .query import Query
 from . import dateparse
@@ -16,7 +12,7 @@ from argparse import ArgumentParser as OptionParser
 from argparse import HelpFormatter as Formatter #IndentedHelpFormatter as Formatter
 from argparse import Namespace
 
-version = u'Quasselgrep 0.1\nCopyright (c) 2013 Chris Le Sueur\nThis program is licensed under the GNU General Public License'
+version = u'Quasselgrep 0.2\nCopyright (c) 2013 Chris Le Sueur\nCopyright (c) 2023 Jernej Jakob\nThis program is licensed under the GNU General Public License'
 usage = u'%(prog)s [options] <keywords>'
 
 def format_option_strings(self, option):
